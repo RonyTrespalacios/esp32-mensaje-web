@@ -252,7 +252,7 @@ winget install --id ArduinoSA.IDE.stable -e
 
 La mayoría de placas ESP32 DevKit baratas usan el chip **CH340** (a veces CH341/CH9102); otras usan **CP2102** de Silicon Labs. Mira el chip pequeño junto al conector USB.
 
-- **CH340 / CH341**: descarga `CH341SER.EXE` de WCH → <https://www.wch-ic.com/downloads/CH341SER_EXE.html>, ejecútalo y pulsa **INSTALL**.
+- **CH340 / CH341**: descarga directa (zip con `CH341SER.EXE`): <https://kio4.com/arduino/imagenes/ch341ser_win.zip>, o la versión más reciente en la página oficial de WCH: <https://www.wch-ic.com/downloads/CH341SER_EXE.html>. Descomprime, ejecuta `CH341SER.EXE` como administrador y pulsa **INSTALL**.
 - **CP2102 / CP210x**: <https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers> → *CP210x Universal Windows Driver*.
 
 Conecta la ESP32 con un cable USB **de datos** (no solo de carga) y abre **Administrador de dispositivos → Puertos (COM y LPT)**. Debe aparecer algo como `USB-SERIAL CH340 (COM5)`. Anota el número `COMx`.
@@ -265,6 +265,8 @@ Conecta la ESP32 con un cable USB **de datos** (no solo de carga) y abre **Admin
    ```
    https://espressif.github.io/arduino-esp32/package_esp32_index.json
    ```
+
+   > La URL antigua `https://dl.espressif.com/dl/package_esp32_index.json`, que usan muchos tutoriales, también funciona, pero solo ofrece el core hasta la versión 1.0.6 (2021).
 
 3. **OK**.
 4. **Tools → Board → Boards Manager…** (o el ícono de placas en la barra izquierda), busca **`esp32`** y instala **"esp32 by Espressif Systems"**. Tarda unos minutos.
@@ -285,7 +287,7 @@ Conecta la ESP32 con un cable USB **de datos** (no solo de carga) y abre **Admin
 ### 5.9 Programar la ESP32
 
 1. Arduino IDE → **File → Open** → `esp32\esp32_mensaje\esp32_mensaje.ino` (verás también la pestaña `config.h`).
-2. **Tools → Board → esp32 → ESP32 Dev Module** (o el modelo de tu placa).
+2. **Tools → Board → esp32 → DOIT ESP32 DEVKIT V1** (si tienes otra placa, *ESP32 Dev Module* sirve para casi cualquier DevKit).
 3. **Tools → Port → COMx** (el del paso 5.6).
 4. Pulsa **Upload** (→). Si se queda en `Connecting.....`, mantén presionado el botón **BOOT** de la placa hasta que empiece a escribir.
 5. Abre **Tools → Serial Monitor** a **115200 baud**. Deberías ver:

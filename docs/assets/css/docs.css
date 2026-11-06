@@ -356,3 +356,49 @@ pre.mermaid:not([data-processed]) { color: transparent; min-height: 80px; }
   .pager .next { grid-column: 1; }
   .doc h1 { font-size: 1.65rem; }
 }
+
+/* ---------- Ilustraciones de pantallas (mockups) ---------- */
+.shot { margin: 1.2em 0 1.6em; }
+.mock {
+  --m-bg: #ffffff; --m-fg: #1f2328; --m-soft: #f0f2f4; --m-line: #d0d7de; --m-title: #e9ecef; --m-mut: #6a737d;
+  --m-accent: #008184; /* verde Arduino */
+  max-width: 640px; margin: 0 auto; border: 1px solid var(--m-line); border-radius: 8px; overflow: hidden;
+  background: var(--m-bg); color: var(--m-fg); font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+:root[data-theme="dark"] .mock { --m-bg: #1e2227; --m-fg: #e6e8eb; --m-soft: #262b31; --m-line: #3a4048; --m-title: #2b3037; --m-mut: #9aa3ae; }
+.mock-title { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--m-title); border-bottom: 1px solid var(--m-line); font-size: 12px; }
+.mock-title .dots { display: flex; gap: 5px; margin-left: auto; }
+.mock-title .dots i { width: 10px; height: 10px; border-radius: 2px; background: var(--m-line); display: block; }
+.mock-body { padding: 14px; }
+.mock-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+.mock-label { color: var(--m-mut); min-width: 150px; }
+.mock-input { flex: 1; min-width: 0; border: 1px solid var(--m-line); border-radius: 4px; padding: 4px 8px; background: var(--m-bg); font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mock-btn { border: 1px solid var(--m-line); border-radius: 4px; padding: 3px 12px; background: var(--m-soft); font-size: 12px; display: inline-block; }
+.mock-btn.primary { background: var(--m-accent); color: #fff; border-color: var(--m-accent); }
+.mock-check { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--m-line); border-radius: 2px; vertical-align: -2px; margin-right: 6px; }
+.mock-tree { font-size: 13px; }
+.mock-tree div { padding: 2px 0; white-space: nowrap; }
+.mock-tree .i1 { padding-left: 18px; } .mock-tree .i2 { padding-left: 40px; }
+.mock-menu { border: 1px solid var(--m-line); border-radius: 4px; background: var(--m-bg); display: inline-block; min-width: 260px; vertical-align: top; box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+.mock-menu div { padding: 4px 14px; display: flex; justify-content: space-between; gap: 18px; white-space: nowrap; }
+.mock-menu .sep { border-top: 1px solid var(--m-line); padding: 0; margin: 3px 0; }
+.mock-menu .sel { background: var(--m-accent); color: #fff; }
+.mock-card { border: 1px solid var(--m-line); border-radius: 6px; padding: 10px 12px; margin: 8px 0; background: var(--m-bg); }
+.mock-card b { display: block; }
+.mock-card small { color: var(--m-mut); display: block; margin: 2px 0 8px; }
+.mock-console { background: #0f1115; color: #d7dae0; font-family: var(--mono); font-size: 12px; padding: 10px 12px; white-space: pre-wrap; }
+.mock-console .ok { color: #7ee787; } .mock-console .warn { color: #f0b44c; }
+.mock-split { display: flex; gap: 0; }
+.mock-side { width: 44px; background: var(--m-title); border-right: 1px solid var(--m-line); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px 0; font-size: 16px; }
+.mock-side .on { outline: 2px solid var(--accent); border-radius: 4px; }
+.mock-panel { flex: 1; min-width: 0; padding: 10px 12px; }
+.mock-toolbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--m-soft); border-bottom: 1px solid var(--m-line); }
+.mock-round { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--m-accent); color: #fff; font-size: 13px; }
+.hl { outline: 2.5px solid var(--accent); outline-offset: 2px; border-radius: 4px; position: relative; }
+.hl[data-n]::after {
+  content: attr(data-n); position: absolute; top: -11px; right: -11px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: #fff; font: 700 11px/20px var(--sans); text-align: center; z-index: 1;
+}
+.shot figcaption { font-size: 13px; color: var(--fg-muted); text-align: center; margin-top: 8px; }
+.mock-input.hl { overflow: visible; white-space: normal; word-break: break-all; }

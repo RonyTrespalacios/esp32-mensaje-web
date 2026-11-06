@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arduino IDE y placa ESP32 · ESP32 Mensaje Web</title>
-<meta name="description" content="Instalar Arduino IDE, drivers CH340/CP210x y el paquete esp32 de Espressif">
+<meta name="description" content="Instalar Arduino IDE, driver CH340/CH341 y el paquete esp32 de Espressif para la DOIT ESP32 DEVKIT V1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="../assets/css/docs.css">
 <script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
@@ -12,13 +12,18 @@
 <body data-root="../" data-page="inicio/arduino-ide.html">
 <article class="doc">
 <h1>5. Arduino IDE y placa ESP32</h1>
-<p class="lead">Instalarás Arduino IDE 2, el driver USB-Serial de tu placa y el soporte de placas ESP32 de Espressif.</p>
+<p class="lead">Instalarás Arduino IDE 2, el driver USB-Serial de tu placa y el soporte de placas ESP32 de Espressif. La placa de referencia del curso es la <strong>DOIT ESP32 DEVKIT V1</strong>.</p>
+
+<div class="callout">
+  <span class="callout-title">Sobre las ilustraciones</span>
+  <p>Las imágenes de esta página son <strong>recreaciones</strong> de las ventanas reales, con el lugar donde debes hacer clic marcado con un número rojo. Según tu versión de Windows o de Arduino IDE, las ventanas pueden verse un poco distintas.</p>
+</div>
 
 <h2>Instalar Arduino IDE 2</h2>
 <div class="tabs">
   <div class="tab" data-label="Windows">
 <pre><code class="language-powershell">winget install --id ArduinoSA.IDE.stable -e</code></pre>
-<p>Alternativa: descarga el instalador <em>Windows Win 10 and newer, 64 bits</em> en <a href="https://www.arduino.cc/en/software">arduino.cc/en/software</a>. Durante la instalación, acepta instalar los controladores USB que ofrece el asistente.</p>
+<p>Alternativa: descarga el instalador <em>Windows Win 10 and newer, 64 bits</em> en <a href="https://www.arduino.cc/en/software">arduino.cc/en/software</a>. Si el asistente pregunta si quieres instalar controladores USB, acepta.</p>
   </div>
   <div class="tab" data-label="Linux">
 <p>Descarga el <strong>AppImage</strong> (<em>Linux AppImage 64 bits</em>) desde <a href="https://www.arduino.cc/en/software">arduino.cc/en/software</a> y ejecútalo:</p>
@@ -26,41 +31,86 @@
 mv ~/Descargas/arduino-ide_*_Linux_64bit.AppImage ~/Applications/
 chmod +x ~/Applications/arduino-ide_*_Linux_64bit.AppImage
 ~/Applications/arduino-ide_*_Linux_64bit.AppImage</code></pre>
-<p>Si no abre, revisa que instalaste <code>libfuse2</code> / <code>libfuse2t64</code> (<a href="workspace-linux.html#dependencias-de-arduino-ide-appimage">paso 3</a>). Alternativa: <code>flatpak install flathub cc.arduino.IDE2</code>.</p>
+<p>Si no abre, revisa que instalaste <code>libfuse2</code> o <code>libfuse2t64</code> (<a href="workspace-linux.html#dependencias-de-arduino-ide-appimage">paso 3</a>). Alternativa: <code>flatpak install flathub cc.arduino.IDE2</code>.</p>
   </div>
 </div>
 
 <h2>Identificar el chip USB-Serial</h2>
-<p>El ESP32 no habla USB directamente (en la mayoría de DevKits): la placa tiene un chip <strong>puente USB ↔ UART</strong> junto al conector. Míralo con atención (puede requerir lupa o la cámara del celular):</p>
+<p>En la mayoría de placas, el ESP32 no se conecta por USB directamente: hay un chip <strong>puente USB ↔ UART</strong> junto al conector. En la DOIT ESP32 DEVKIT V1 suele ser un <strong>CH340</strong> o un <strong>CP2102</strong>. Míralo con lupa o con la cámara del celular:</p>
 <table>
   <thead><tr><th>Texto en el chip</th><th>Fabricante</th><th>Driver</th></tr></thead>
   <tbody>
     <tr><td><code>CH340</code>, <code>CH340C</code>, <code>CH341</code>, <code>CH9102</code></td><td>WCH (Nanjing Qinheng)</td><td>CH341SER</td></tr>
     <tr><td><code>CP2102</code>, <code>CP2104</code>, <code>SILABS</code></td><td>Silicon Labs</td><td>CP210x VCP</td></tr>
-    <tr><td>Sin chip aparte (ESP32-S3/C3 con USB nativo)</td><td>Espressif</td><td>No necesita driver</td></tr>
   </tbody>
 </table>
 
 <h2>Instalar el driver</h2>
 <div class="tabs">
   <div class="tab" data-label="Windows">
-<h4>CH340 / CH341 / CH9102</h4>
+<h4>CH340 / CH341 (el más común)</h4>
+<table>
+  <thead><tr><th>Descarga</th><th>Contenido</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Directa (zip):</strong> <a href="https://kio4.com/arduino/imagenes/ch341ser_win.zip">kio4.com/arduino/imagenes/ch341ser_win.zip</a></td><td><code>CH341SER.EXE</code>, versión de 2017 (190 KB). Es una copia que publica el tutorial de <a href="https://kio4.com/arduino/100_Wemos_ESP32.htm">kio4.com</a> y funciona en Windows 10/11.</td></tr>
+    <tr><td><strong>Oficial del fabricante:</strong> <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html">wch-ic.com/downloads/CH341SER_EXE.html</a></td><td>Versión más reciente. Pulsa el botón <em>Download</em> de la página.</td></tr>
+  </tbody>
+</table>
 <ol class="steps">
-  <li><strong>Descarga</strong> <code>CH341SER.EXE</code> desde <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html">wch-ic.com/downloads/CH341SER_EXE.html</a>.</li>
-  <li><strong>Ejecútalo</strong> como administrador y pulsa <em>INSTALL</em>. Debe decir <em>Driver install success!</em></li>
+  <li><strong>Descomprime</strong> el zip (clic derecho → <em>Extraer todo</em>).</li>
+  <li><strong>Ejecuta <code>CH341SER.EXE</code></strong> (clic derecho → <em>Ejecutar como administrador</em>).</li>
+  <li><strong>Pulsa INSTALL</strong> y espera el mensaje <em>Driver install success!</em></li>
 </ol>
+<figure class="shot">
+  <div class="mock">
+    <div class="mock-title">DriverSetup(X64)<span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="mock-body">
+      <div class="mock-row" style="gap:18px;align-items:flex-start">
+        <div style="flex:1;min-width:220px">
+          <div class="mock-row"><span class="mock-label" style="min-width:70px">Select INF</span><span class="mock-input">CH341SER.INF</span></div>
+          <div class="mock-row" style="margin-top:14px">WCH.CN<br>|__ USB-SERIAL CH340<br>|__ 11/04/2011, 3.3.2011.11</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span class="mock-btn primary hl" data-n="1">INSTALL</span>
+          <span class="mock-btn">UNINSTALL</span>
+          <span class="mock-btn">HELP</span>
+        </div>
+      </div>
+      <div class="mock-card" style="margin-top:12px;max-width:260px"><b>DriverSetup</b><small>&nbsp;</small>ℹ️ Driver install success! <span class="mock-btn" style="float:right">Aceptar</span></div>
+    </div>
+  </div>
+  <figcaption>Figura 1. Instalador CH341SER: pulsa <strong>INSTALL</strong> y espera la confirmación.</figcaption>
+</figure>
+
 <h4>CP2102 / CP210x</h4>
 <ol class="steps">
   <li><strong>Descarga</strong> <em>CP210x Universal Windows Driver</em> desde <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers">silabs.com/developers/usb-to-uart-bridge-vcp-drivers</a>.</li>
-  <li><strong>Descomprime</strong> el ZIP, clic derecho en <code>silabser.inf</code> → <em>Instalar</em>.</li>
+  <li><strong>Descomprime</strong> el ZIP, haz clic derecho en <code>silabser.inf</code> → <em>Instalar</em>.</li>
 </ol>
-<h4>Comprobar</h4>
-<p>Conecta la placa y abre el <strong>Administrador de dispositivos</strong> (<kbd>Win</kbd>+<kbd>X</kbd> → Administrador de dispositivos) → <em>Puertos (COM y LPT)</em>. Debe aparecer algo como <code>USB-SERIAL CH340 (COM5)</code> o <code>Silicon Labs CP210x USB to UART Bridge (COM4)</code>. <strong>Anota el número COM</strong>.</p>
-<p>Desde PowerShell también puedes listarlos:</p>
+
+<h4>Comprobar el puerto COM</h4>
+<p>Conecta la placa con el cable USB y abre el <strong>Administrador de dispositivos</strong> (<kbd>Win</kbd>+<kbd>X</kbd> → <em>Administrador de dispositivos</em>). Expande <em>Puertos (COM y LPT)</em> y <strong>anota el número COM</strong>.</p>
+<figure class="shot">
+  <div class="mock">
+    <div class="mock-title">Administrador de dispositivos<span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="mock-body mock-tree">
+      <div>🖥️ DESKTOP-UNILLANOS</div>
+      <div class="i1">› 🔊 Entradas y salidas de audio</div>
+      <div class="i1">› 🖱️ Mouse y otros dispositivos señaladores</div>
+      <div class="i1">⌄ 🔌 Puertos (COM y LPT)</div>
+      <div class="i2"><span class="hl" data-n="2">🔌 USB-SERIAL CH340 (COM5)</span></div>
+      <div class="i1">› ⚙️ Procesadores</div>
+      <div class="i1">› 🔌 Controladoras de bus serie universal</div>
+    </div>
+  </div>
+  <figcaption>Figura 2. La placa aparece como <strong>USB-SERIAL CH340 (COMx)</strong>. Con CP2102 dirá <em>Silicon Labs CP210x USB to UART Bridge (COMx)</em>.</figcaption>
+</figure>
+<p>Si en lugar de eso aparece <em>Otros dispositivos → USB2.0-Serial</em> con un triángulo amarillo, el driver no está instalado. Si no aparece nada, prueba otro cable: puede ser uno de solo carga.</p>
+<p>También puedes listar los puertos desde PowerShell:</p>
 <pre><code class="language-powershell">Get-CimInstance Win32_SerialPort | Select-Object DeviceID, Description</code></pre>
   </div>
   <div class="tab" data-label="Linux">
-<p>Los drivers <code>ch341</code> y <code>cp210x</code> vienen <strong>incluidos en el kernel</strong>: no hay que instalar nada. Solo verifica los permisos (<code>dialout</code>) y el problema de <code>brltty</code> del <a href="workspace-linux.html#permisos-para-el-puerto-serie">paso 3</a>.</p>
+<p>Los drivers <code>ch341</code> y <code>cp210x</code> ya vienen <strong>en el kernel</strong>: no hay que instalar nada. Solo verifica el grupo <code>dialout</code> y el problema de <code>brltty</code> explicados en el <a href="workspace-linux.html#permisos-para-el-puerto-serie">paso 3</a>.</p>
 <p>Conecta la placa y comprueba:</p>
 <pre><code class="language-bash">sudo dmesg | tail -n 5          # debe mencionar ch341-uart o cp210x
 ls -l /dev/ttyUSB* /dev/ttyACM*  # p. ej. /dev/ttyUSB0, grupo dialout</code></pre>
@@ -68,34 +118,113 @@ ls -l /dev/ttyUSB* /dev/ttyACM*  # p. ej. /dev/ttyUSB0, grupo dialout</code></pr
 </div>
 
 <h2>Agregar las placas de Espressif</h2>
-<p>Arduino IDE no trae soporte para ESP32 de fábrica. Se agrega mediante un <em>índice de paquetes</em> publicado por Espressif.</p>
+<p>Arduino IDE no trae de fábrica las placas ESP32. Para agregarlas se le indica una URL donde Espressif publica la lista de paquetes.</p>
+
+<h3>URL del gestor de placas</h3>
+<table>
+  <thead><tr><th>URL</th><th>Versiones del core que ofrece</th><th>Cuándo usarla</th></tr></thead>
+  <tbody>
+    <tr><td><code>https://espressif.github.io/arduino-esp32/package_esp32_index.json</code></td><td>Todas, hasta la más reciente (3.x)</td><td><strong>Recomendada.</strong> Es la URL oficial actual de Espressif.</td></tr>
+    <tr><td><code>https://dl.espressif.com/dl/package_esp32_index.json</code></td><td>Solo hasta la <strong>1.0.6</strong> (2021)</td><td>La URL antigua, la que usan muchos tutoriales, entre ellos el de kio4. Funciona y el proyecto compila con ella, pero instala un core viejo.</td></tr>
+  </tbody>
+</table>
+
 <ol class="steps">
   <li><strong>Abre las preferencias.</strong> <em>File → Preferences</em> (en español: <em>Archivo → Preferencias</em>). Atajo: <kbd>Ctrl</kbd>+<kbd>,</kbd>.</li>
-  <li><strong>Pega la URL</strong> en el campo <em>Additional boards manager URLs</em> (si ya hay otras, sepáralas con coma):
+  <li><strong>Pega la URL</strong> en el campo <em>Additional boards manager URLs</em> (<em>Gestor de URLs Adicionales de Tarjetas</em>). Si ya tienes otras URLs, sepáralas con una coma.
 <pre><code class="language-plaintext">https://espressif.github.io/arduino-esp32/package_esp32_index.json</code></pre></li>
-  <li><strong>Pulsa OK.</strong> El IDE descargará el índice.</li>
-  <li><strong>Abre el gestor de placas.</strong> <em>Tools → Board → Boards Manager…</em> o el segundo ícono de la barra lateral izquierda.</li>
-  <li><strong>Instala “esp32 by Espressif Systems”.</strong> Escribe <code>esp32</code> en el buscador y pulsa <em>Install</em> en ese paquete (no en “Arduino ESP32 Boards”). Descarga ~300 MB entre compilador y herramientas; ten paciencia.</li>
+  <li><strong>Pulsa OK.</strong> El IDE descarga el índice; puede tardar unos segundos.</li>
 </ol>
+<figure class="shot">
+  <div class="mock">
+    <div class="mock-title">Preferences<span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="mock-body">
+      <div class="mock-row"><span class="mock-btn" style="background:var(--m-bg)">Settings</span><span class="mock-btn">Network</span></div>
+      <div class="mock-row"><span class="mock-label">Sketchbook location:</span><span class="mock-input">C:\Users\estudiante\Documents\Arduino</span></div>
+      <div class="mock-row"><span class="mock-label">Editor font size:</span><span class="mock-input" style="flex:0 0 60px">14</span></div>
+      <div class="mock-row"><span class="mock-label">Language:</span><span class="mock-input" style="flex:0 0 140px">Español ▾</span></div>
+      <div class="mock-row"><span class="mock-label">Show verbose output during</span><span><span class="mock-check"></span>compile <span class="mock-check" style="margin-left:10px"></span>upload</span></div>
+      <div class="mock-row"><span class="mock-label">Additional boards manager URLs:</span><span class="mock-input hl" data-n="1">https://espressif.github.io/arduino-esp32/package_esp32_index.json</span></div>
+      <div class="mock-row" style="justify-content:flex-end;margin-top:12px"><span class="mock-btn">CANCEL</span><span class="mock-btn primary hl" data-n="2">OK</span></div>
+    </div>
+  </div>
+  <figcaption>Figura 3. Preferencias de Arduino IDE 2: pega la URL (1) y pulsa OK (2).</figcaption>
+</figure>
+
+<h3>Instalar el paquete esp32</h3>
+<ol class="steps">
+  <li><strong>Abre el gestor de placas.</strong> <em>Tools → Board → Boards Manager…</em> o el segundo ícono de la barra lateral izquierda.</li>
+  <li><strong>Busca <code>esp32</code>.</strong></li>
+  <li><strong>Instala “esp32 by Espressif Systems”.</strong> No confundir con <em>Arduino ESP32 Boards</em>, que es otro paquete. La descarga ocupa unos 300 MB entre compilador y herramientas.</li>
+</ol>
+<figure class="shot">
+  <div class="mock">
+    <div class="mock-title">esp32_mensaje | Arduino IDE 2<span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="mock-split">
+      <div class="mock-side"><span>📁</span><span class="on hl" data-n="1">🔲</span><span>📚</span><span>🐞</span><span>🔍</span></div>
+      <div class="mock-panel">
+        <b>BOARDS MANAGER</b>
+        <div class="mock-row"><span class="mock-input hl" data-n="2">esp32</span></div>
+        <div class="mock-row"><span class="mock-label" style="min-width:0">Type: All ▾</span></div>
+        <div class="mock-card"><b>Arduino ESP32 Boards</b><small>by Arduino</small><span class="mock-btn">INSTALL</span></div>
+        <div class="mock-card"><b>esp32</b><small>by Espressif Systems · 3.3.x</small>Boards included in this package: ESP32 Dev Module, DOIT ESP32 DEVKIT V1, …<div class="mock-row"><span class="mock-input" style="flex:0 0 90px">3.3.x ▾</span><span class="mock-btn primary hl" data-n="3">INSTALL</span></div></div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Figura 4. Gestor de placas: ícono de placas (1), busca <code>esp32</code> (2) e instala el paquete de <strong>Espressif Systems</strong> (3).</figcaption>
+</figure>
 
 <div class="callout">
   <span class="callout-title">¿Qué instala ese paquete?</span>
   <ul>
-    <li>El compilador cruzado <code>xtensa-esp32-elf-gcc</code> (convierte C++ en instrucciones del procesador Xtensa del ESP32).</li>
-    <li>El framework <strong>ESP-IDF</strong> precompilado y la capa Arduino encima.</li>
-    <li>Librerías como <code>WiFi.h</code>, <code>HTTPClient.h</code>, <code>WebServer.h</code>, <code>Preferences.h</code>.</li>
+    <li>El compilador cruzado <code>xtensa-esp32-elf-gcc</code>, que convierte el C++ en instrucciones del procesador Xtensa del ESP32.</li>
+    <li>El framework <strong>ESP-IDF</strong> precompilado, con la capa Arduino encima.</li>
+    <li>Librerías como <code>WiFi.h</code>, <code>HTTPClient.h</code>, <code>WebServer.h</code> y <code>Preferences.h</code>.</li>
     <li><code>esptool</code>, la herramienta que escribe el binario en la memoria flash por el puerto serie.</li>
+    <li>Las definiciones de las placas, entre ellas <strong>DOIT ESP32 DEVKIT V1</strong>.</li>
   </ul>
 </div>
 
 <h2>Seleccionar placa y puerto</h2>
 <ol class="steps">
-  <li><strong>Placa:</strong> <em>Tools → Board → esp32 → ESP32 Dev Module</em> (sirve para casi todos los DevKit con ESP32-WROOM-32). Si tu placa tiene otro nombre en la lista, elígelo.</li>
-  <li><strong>Puerto:</strong> <em>Tools → Port</em> → <code>COMx</code> (Windows) o <code>/dev/ttyUSB0</code> (Linux).</li>
+  <li><strong>Placa:</strong> <em>Tools → Board → esp32 → DOIT ESP32 DEVKIT V1</em>. Si tu placa es otra, <em>ESP32 Dev Module</em> sirve para casi cualquier DevKit con ESP32-WROOM-32.</li>
+  <li><strong>Puerto:</strong> <em>Tools → Port</em> → <code>COMx</code> en Windows (el de la figura 2) o <code>/dev/ttyUSB0</code> en Linux.</li>
 </ol>
+<figure class="shot">
+  <div class="mock">
+    <div class="mock-title">Arduino IDE 2 — menú Tools<span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="mock-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+      <div class="mock-menu">
+        <div>Auto Format<span>Ctrl+T</span></div>
+        <div>Manage Libraries…<span>Ctrl+Shift+I</span></div>
+        <div>Serial Monitor<span>Ctrl+Shift+M</span></div>
+        <div class="sep"></div>
+        <div class="sel hl" data-n="1">Board: "DOIT ESP32 DEVKIT V1"<span>›</span></div>
+        <div class="hl" data-n="2">Port: "COM5"<span>›</span></div>
+        <div>Upload Speed: "921600"<span>›</span></div>
+        <div>Flash Frequency: "80MHz"<span>›</span></div>
+        <div class="sep"></div>
+        <div>Get Board Info</div>
+      </div>
+      <div class="mock-menu">
+        <div>Boards Manager…<span>Ctrl+Shift+B</span></div>
+        <div class="sep"></div>
+        <div>Arduino AVR Boards<span>›</span></div>
+        <div class="sel">esp32<span>›</span></div>
+        <div class="sep"></div>
+        <div>ESP32 Dev Module</div>
+        <div class="sel">✓ DOIT ESP32 DEVKIT V1</div>
+        <div>ESP32 Wrover Module</div>
+        <div>NodeMCU-32S</div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Figura 5. <em>Tools → Board → esp32 → DOIT ESP32 DEVKIT V1</em> (1) y <em>Tools → Port → COM5</em> (2).</figcaption>
+</figure>
+<p>También puedes usar el selector de la barra superior del IDE (<em>Select Board</em>), que agrupa placa y puerto en un solo menú.</p>
 
 <h2>Prueba de humo (opcional)</h2>
-<p>Antes de cargar el proyecto, verifica la cadena completa con un ejemplo mínimo: <em>File → Examples → 01.Basics → Blink</em>, cambia <code>LED_BUILTIN</code> por <code>2</code> si no compila, y pulsa <em>Upload</em>. Si el LED azul de la placa parpadea, compilador, driver y puerto están bien.</p>
+<p>Antes de cargar el proyecto, comprueba que todo funciona con un ejemplo mínimo: <em>File → Examples → 01.Basics → Blink</em>, cambia <code>LED_BUILTIN</code> por <code>2</code> (el LED azul de la DOIT DEVKIT V1 está en el GPIO2) y pulsa <em>Upload</em>. Si el LED parpadea, el compilador, el driver y el puerto están bien.</p>
 
 <p>Continúa con <a href="configurar-red.html">6. Configurar red y config.h</a>.</p>
 </article>

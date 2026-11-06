@@ -33,13 +33,14 @@ flowchart TD
 <table>
   <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Solución</th></tr></thead>
   <tbody>
-    <tr><td>No aparece ningún puerto</td><td>Cable de solo carga o falta el driver.</td><td>Prueba otro cable; instala CH340/CP210x (<a href="../inicio/arduino-ide.html#instalar-el-driver">paso 5</a>).</td></tr>
+    <tr><td>No aparece ningún puerto</td><td>Cable de solo carga o falta el driver.</td><td>Prueba otro cable; instala CH340/CP210x (<a href="../inicio/arduino-ide.html#instalar-el-driver">paso 5</a>, descarga directa <a href="https://kio4.com/arduino/imagenes/ch341ser_win.zip">ch341ser_win.zip</a>).</td></tr>
+    <tr><td>En el gestor de placas solo aparece la versión 1.0.6</td><td>Usaste la URL antigua <code>dl.espressif.com/dl/…</code>.</td><td>Funciona, pero para el core actual cambia a <code>https://espressif.github.io/arduino-esp32/package_esp32_index.json</code>.</td></tr>
     <tr><td>Linux: el puerto aparece y desaparece</td><td><code>brltty</code> se apropia del CH340.</td><td><code>sudo apt remove brltty</code></td></tr>
     <tr><td>Linux: <code>Permission denied: '/dev/ttyUSB0'</code></td><td>Usuario fuera de <code>dialout</code>.</td><td><code>sudo usermod -aG dialout $USER</code> y volver a iniciar sesión.</td></tr>
     <tr><td><code>Failed to connect to ESP32: No serial data received</code> / se queda en <code>Connecting....</code></td><td>No entra en modo bootloader.</td><td>Mantén <strong>BOOT</strong> al empezar la carga; baja <em>Upload Speed</em> a 115200.</td></tr>
     <tr><td><code>A fatal error occurred: Could not open COMx, the port is busy</code></td><td>Otro programa usa el puerto.</td><td>Cierra otros Monitores Serie, PuTTY, Cura…</td></tr>
     <tr><td><code>fatal error: config.h: No such file or directory</code></td><td>No creaste <code>config.h</code>.</td><td>Copia <code>config.example.h</code> → <code>config.h</code> (<a href="../inicio/configurar-red.html#crear-configh">paso 6</a>).</td></tr>
-    <tr><td><code>WiFi.h: No such file</code> o no aparece “ESP32 Dev Module”</td><td>Paquete de placas no instalado o placa equivocada.</td><td>Instala <em>esp32 by Espressif Systems</em> y selecciona la placa ESP32.</td></tr>
+    <tr><td><code>WiFi.h: No such file</code> o no aparece “DOIT ESP32 DEVKIT V1”</td><td>Paquete de placas no instalado o placa equivocada.</td><td>Instala <em>esp32 by Espressif Systems</em> y selecciona <em>DOIT ESP32 DEVKIT V1</em>.</td></tr>
     <tr><td><code>Brownout detector was triggered</code> en bucle</td><td>Alimentación insuficiente al encender el WiFi.</td><td>Otro cable/puerto USB, evitar hubs sin alimentación.</td></tr>
   </tbody>
 </table>

@@ -26,16 +26,44 @@
 </div>
 
 <h2>Compilar (Verify)</h2>
+<figure class="shot">
+  <div class="mock">
+    <div class="mock-title">esp32_mensaje | Arduino IDE 2<span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="mock-toolbar"><span class="mock-round hl" data-n="1">✓</span><span class="mock-round hl" data-n="2">→</span><span class="mock-input" style="flex:0 0 auto">🔌 DOIT ESP32 DEVKIT V1 · COM5 ▾</span><span style="margin-left:auto" class="hl" data-n="3">🔍</span></div>
+    <div class="mock-row" style="padding:0 10px;gap:0"><span class="mock-btn" style="border-radius:4px 4px 0 0;background:var(--m-bg)">esp32_mensaje.ino</span><span class="mock-btn" style="border-radius:4px 4px 0 0">config.example.h</span><span class="mock-btn" style="border-radius:4px 4px 0 0">config.h</span></div>
+    <div class="mock-console">#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+#include "config.h"</div>
+  </div>
+  <figcaption>Figura 1. Barra superior: <strong>Verify</strong> (1), <strong>Upload</strong> (2) y <strong>Serial Monitor</strong> (3). Debajo, las pestañas del sketch.</figcaption>
+</figure>
+
 <p>Pulsa el botón ✓ <strong>Verify</strong> (<kbd>Ctrl</kbd>+<kbd>R</kbd>). La primera compilación tarda 1–3 minutos porque compila el núcleo completo del ESP32. Al final verás algo como:</p>
 <pre><code class="language-plaintext">Sketch uses 912345 bytes (69%) of program storage space. Maximum is 1310720 bytes.
 Global variables use 44768 bytes (13%) of dynamic memory, leaving 282912 bytes for local variables.</code></pre>
 
 <h2>Cargar (Upload)</h2>
 <ol class="steps">
-  <li><strong>Verifica placa y puerto</strong> en la barra superior: <em>ESP32 Dev Module</em> en <code>COMx</code> o <code>/dev/ttyUSB0</code>.</li>
+  <li><strong>Verifica placa y puerto</strong> en la barra superior: <em>DOIT ESP32 DEVKIT V1</em> en <code>COMx</code> o <code>/dev/ttyUSB0</code>.</li>
   <li><strong>Pulsa → Upload</strong> (<kbd>Ctrl</kbd>+<kbd>U</kbd>).</li>
   <li><strong>Observa la consola.</strong> Aparecerá <code>Connecting....</code> y luego <code>Writing at 0x00010000... (10 %)</code> hasta <code>Hard resetting via RTS pin...</code>.</li>
 </ol>
+
+<figure class="shot">
+  <div class="mock">
+    <div class="mock-title">Output<span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="mock-console">esptool.py v4.x
+Serial port COM5
+<span class="warn">Connecting.......  ← si se queda aquí, mantén presionado BOOT</span>
+Chip is ESP32-D0WD-V3 (revision v3.1)
+Uploading stub...
+Writing at 0x00010000... (10 %)
+Writing at 0x000a1b2c... (100 %)
+<span class="ok">Wrote 912345 bytes ... Hash of data verified.</span>
+<span class="ok">Hard resetting via RTS pin...</span></div>
+  </div>
+  <figcaption>Figura 2. Salida de una carga correcta.</figcaption>
+</figure>
 
 <div class="callout warning">
   <span class="callout-title">Se queda en “Connecting.....”</span>
@@ -59,10 +87,17 @@ flowchart LR
   <li><strong>Pulsa EN / RST</strong> en la placa para reiniciarla y ver el arranque desde el principio.</li>
 </ol>
 <p>Salida esperada:</p>
-<pre data-title="Monitor Serie (115200)"><code class="language-plaintext">Conectando a WiFi.......
+<figure class="shot">
+  <div class="mock">
+    <div class="mock-title">Serial Monitor ✕<span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="mock-toolbar"><span class="mock-input">Message (Enter to send message to 'DOIT ESP32 DEVKIT V1' on 'COM5')</span><span class="mock-input" style="flex:0 0 auto">New Line ▾</span><span class="mock-input hl" data-n="1" style="flex:0 0 auto">115200 baud ▾</span></div>
+    <div class="mock-console">Conectando a WiFi.......
 Conectado. IP ESP32: 192.168.137.23
 Consultando: http://192.168.137.1:8000/mensaje/texto
-Nuevo mensaje: Hola mundo</code></pre>
+<span class="ok">Nuevo mensaje: Hola mundo</span></div>
+  </div>
+  <figcaption>Figura 3. Monitor Serie a <strong>115200 baud</strong> (1) con la salida esperada.</figcaption>
+</figure>
 
 <table>
   <thead><tr><th>Si ves…</th><th>Significa</th><th>Revisa</th></tr></thead>
