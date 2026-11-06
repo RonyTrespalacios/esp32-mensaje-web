@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor de mensaje</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Mensaje para la ESP32</h1>
+    <p class="label">Mensaje actual:</p>
+    <p id="actual" class="actual">Cargando...</p>
+
+    <form id="form">
+      <input id="nuevo" type="text" placeholder="Escribe un nuevo mensaje" required>
+      <button type="submit">Guardar</button>
+    </form>
+    <p id="estado" class="estado"></p>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

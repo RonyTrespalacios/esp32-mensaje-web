@@ -1,0 +1,19 @@
+# Credenciales locales de la ESP32 (usar config.example.h como plantilla)
+esp32/**/config.h
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editores / SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Arduino
+build/
+*.bin
+*.elf
