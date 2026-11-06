@@ -195,8 +195,8 @@ git --version
 
 ```powershell
 cd $HOME\Documents
-git clone https://github.com/<USUARIO>/<REPOSITORIO>.git
-cd <REPOSITORIO>
+git clone https://github.com/RonyTrespalacios/esp32-mensaje-web.git
+cd esp32-mensaje-web
 ```
 
 ### 5.3 Instalar Docker Desktop
