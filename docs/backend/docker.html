@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker y docker compose · ESP32 Mensaje Web</title>
+<meta name="description" content="Dockerfile del backend y docker-compose.yml explicados">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="backend/docker.html">
+<article class="doc">
+<h1>Docker y docker compose</h1>
+<p class="lead">Docker empaqueta el backend con su intérprete de Python y dependencias en una <strong>imagen</strong>; Compose arranca backend y frontend juntos con la configuración de puertos y volúmenes.</p>
+
+<h2>Conceptos clave</h2>
+<table>
+  <thead><tr><th>Término</th><th>Analogía</th><th>En este proyecto</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Imagen</strong></td><td>Plantilla de solo lectura (como un <code>.iso</code>)</td><td><code>python:3.12-slim</code> + FastAPI; <code>nginx:alpine</code></td></tr>
+    <tr><td><strong>Contenedor</strong></td><td>Proceso aislado creado a partir de una imagen</td><td><code>mensaje-backend</code>, <code>mensaje-frontend</code></td></tr>
+    <tr><td><strong>Dockerfile</strong></td><td>Receta para construir una imagen</td><td><code>backend/Dockerfile</code></td></tr>
+    <tr><td><strong>Publicar puerto</strong></td><td>Reenviar un puerto del host al contenedor</td><td><code>8000:8000</code>, <code>3000:80</code></td></tr>
+    <tr><td><strong>Volumen / bind mount</strong></td><td>Carpeta del host visible dentro del contenedor</td><td><code>./frontend</code> → <code>/usr/share/nginx/html</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Dockerfile del backend</h2>
+<pre data-title="backend/Dockerfile"><code class="language-dockerfile">FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY main.py .
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+<table>
+  <thead><tr><th>Instrucción</th><th>Qué hace</th></tr></thead>
+  <tbody>
+    <tr><td><code>FROM python:3.12-slim</code></td><td>Parte de una imagen oficial de Debian mínima con Python 3.12 (~50 MB comprimida).</td></tr>
+    <tr><td><code>WORKDIR /app</code></td><td>Crea y se sitúa en <code>/app</code> dentro de la imagen.</td></tr>
+    <tr><td><code>COPY requirements.txt .</code></td><td>Copia <strong>solo</strong> la lista de dependencias…</td></tr>
+    <tr><td><code>RUN pip install …</code></td><td>…e instala. Al ir antes de copiar el código, Docker reutiliza esta capa en caché si solo cambias <code>main.py</code>: las reconstrucciones tardan segundos.</td></tr>
+    <tr><td><code>COPY main.py .</code></td><td>Copia el código de la aplicación.</td></tr>
+    <tr><td><code>EXPOSE 8000</code></td><td>Documenta el puerto que usa el contenedor (no lo publica por sí mismo).</td></tr>
+    <tr><td><code>CMD [...]</code></td><td>Comando al arrancar: uvicorn sirviendo <code>main:app</code>. <code>--host 0.0.0.0</code> es imprescindible: con <code>127.0.0.1</code> solo aceptaría conexiones desde dentro del propio contenedor.</td></tr>
+  </tbody>
+</table>
+
+<h2>docker-compose.yml</h2>
+<pre data-title="docker-compose.yml"><code class="language-yaml">services:
+  backend:
+    build: ./backend
+    container_name: mensaje-backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    image: nginx:alpine
+    container_name: mensaje-frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    restart: unless-stopped</code></pre>
+
+<h3>Servicio backend</h3>
+<ul>
+  <li><code>build: ./backend</code>: construye la imagen con el <code>Dockerfile</code> de esa carpeta.</li>
+  <li><code>container_name</code>: nombre fijo para identificarlo en <code>docker ps</code> y en los logs.</li>
+  <li><code>ports: "8000:8000"</code>: formato <code>HOST:CONTENEDOR</code>. Lo que llegue al puerto 8000 del computador (por cualquier interfaz) se reenvía al 8000 del contenedor.</li>
+  <li><code>restart: unless-stopped</code>: si el proceso falla o reinicias el PC/Docker, vuelve a arrancar solo, salvo que lo hayas parado a mano.</li>
+</ul>
+
+<h3>Servicio frontend</h3>
+<ul>
+  <li><code>image: nginx:alpine</code>: imagen oficial de nginx sobre Alpine Linux (~20 MB). No hay que construir nada.</li>
+  <li><code>ports: "3000:80"</code>: nginx escucha en el 80 <em>dentro</em> del contenedor; fuera lo vemos en el 3000.</li>
+  <li><code>volumes: ./frontend:/usr/share/nginx/html:ro</code>: monta la carpeta <code>frontend</code> en la carpeta que nginx sirve por defecto, en <strong>solo lectura</strong> (<code>:ro</code>). Por eso los cambios en HTML/JS se ven al recargar, sin reconstruir.</li>
+  <li><code>depends_on: backend</code>: arranca el backend primero (no espera a que esté “listo”, solo a que se haya iniciado).</li>
+</ul>
+
+<h2>Redes</h2>
+<pre class="mermaid">
+flowchart LR
+    subgraph HOST["Computador (todas sus IPs)"]
+        P8000[":8000"]
+        P3000[":3000"]
+        subgraph NET["red bridge esp32-mensaje-web_default"]
+            BE["backend :8000"]
+            FE["frontend :80"]
+        end
+    end
+    EXT["ESP32 / navegador / celular"] --> P8000 --> BE
+    EXT --> P3000 --> FE
+    FE -. "puede resolver el nombre 'backend'" .-> BE
+</pre>
+<p>Compose crea una red privada donde los servicios se encuentran por nombre (<code>http://backend:8000</code>). En este proyecto <strong>no</strong> se usa porque el JavaScript del frontend se ejecuta en el <em>navegador</em> (fuera de Docker), que no conoce ese nombre; por eso <code>app.js</code> usa la IP/host del computador.</p>
+
+<h2>Comandos útiles</h2>
+<table>
+  <thead><tr><th>Comando</th><th>Efecto</th></tr></thead>
+  <tbody>
+    <tr><td><code>docker compose up -d --build</code></td><td>Construir y arrancar en segundo plano.</td></tr>
+    <tr><td><code>docker compose ps</code></td><td>Estado y puertos.</td></tr>
+    <tr><td><code>docker compose logs -f backend</code></td><td>Logs en vivo del backend.</td></tr>
+    <tr><td><code>docker compose exec backend sh</code></td><td>Abrir una shell dentro del contenedor.</td></tr>
+    <tr><td><code>docker compose restart backend</code></td><td>Reiniciar un servicio.</td></tr>
+    <tr><td><code>docker compose down</code></td><td>Parar y borrar contenedores y red.</td></tr>
+    <tr><td><code>docker image prune</code></td><td>Liberar espacio de imágenes antiguas.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout tip">
+  <span class="callout-title">¿El puerto 8000 está ocupado?</span>
+  <p>Cambia solo el lado del host: <code>"8080:8000"</code>. Después actualiza <code>BACKEND_PORT</code> en <code>config.h</code> y la constante <code>API</code> en <code>frontend/app.js</code>. Ver <a href="../referencia/configuracion.html">Todo lo configurable</a>.</p>
+</div>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

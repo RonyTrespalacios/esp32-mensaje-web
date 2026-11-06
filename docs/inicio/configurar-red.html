@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurar red y config.h · ESP32 Mensaje Web</title>
+<meta name="description" content="Red WiFi 2.4 GHz, IP del backend, firewall y archivo config.h">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="inicio/configurar-red.html">
+<article class="doc">
+<h1>6. Configurar red y config.h</h1>
+<p class="lead">La ESP32 y el computador con Docker deben estar en la <strong>misma red</strong>, y la ESP32 debe conocer la <strong>IP del computador</strong>. Aquí defines ambas cosas en <code>config.h</code>.</p>
+
+<h2>Elegir la red</h2>
+<p>La ESP32 solo usa WiFi de <strong>2.4 GHz</strong>. Tienes dos opciones:</p>
+<table>
+  <thead><tr><th>Opción</th><th>Ventaja</th><th>Desventaja</th></tr></thead>
+  <tbody>
+    <tr><td><strong>A. Hotspot del computador</strong> (recomendado en clase)</td><td>Funciona igual en cualquier lugar; la IP del PC es fija y conocida.</td><td>El PC necesita otra conexión (cable o WiFi) para tener Internet en el hotspot.</td></tr>
+    <tr><td><strong>B. Router existente</strong> (casa/laboratorio)</td><td>No hay que configurar nada en el PC.</td><td>La IP del PC puede cambiar; algunas redes institucionales aíslan a los clientes entre sí.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warning">
+  <span class="callout-title">Redes universitarias / con portal cautivo</span>
+  <p>Redes con página de inicio de sesión o con <em>aislamiento de clientes</em> impiden que la ESP32 vea al computador. En ese caso usa la opción A.</p>
+</div>
+
+<h3>Opción A: crear el hotspot</h3>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<ol class="steps">
+  <li><strong>Abre la configuración.</strong> <em>Configuración → Red e Internet → Zona con cobertura inalámbrica móvil</em>.</li>
+  <li><strong>Edita las propiedades.</strong> Define nombre (SSID) y contraseña (mínimo 8 caracteres).</li>
+  <li><strong>Banda: 2.4 GHz.</strong> Si aparece la opción <em>Banda de red</em>, elige <em>2.4 GHz</em> (o “Cualquiera disponible” si no existe 2.4; la ESP32 no verá la red si queda en 5 GHz).</li>
+  <li><strong>Actívalo.</strong> Windows asigna al PC la IP <code>192.168.137.1</code> en esa red.</li>
+</ol>
+  </div>
+  <div class="tab" data-label="Linux">
+<p>Con NetworkManager (Ubuntu y la mayoría de escritorios):</p>
+<pre><code class="language-bash"># Reemplaza wlan0 por tu interfaz (ver: nmcli device)
+nmcli device wifi hotspot ifname wlan0 ssid MiHotspot password "clave-segura-123" band bg</code></pre>
+<p><code>band bg</code> fuerza 2.4 GHz. NetworkManager suele asignar al PC la IP <code>10.42.0.1</code>. También puedes hacerlo gráficamente: <em>Configuración → Wi-Fi → ⋮ → Activar punto de acceso</em>.</p>
+  </div>
+</div>
+
+<h2>Averiguar la IP del computador</h2>
+<p>Es la IP del PC <strong>en la red a la que se conectará la ESP32</strong>, no la de otra interfaz.</p>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<pre><code class="language-powershell">ipconfig</code></pre>
+<ul>
+  <li>Con hotspot: busca <em>Adaptador de LAN inalámbrica Conexión de área local* N</em> → <code>IPv4: 192.168.137.1</code>.</li>
+  <li>Con router: busca <em>Adaptador de LAN inalámbrica Wi-Fi</em> → p. ej. <code>192.168.1.50</code>.</li>
+</ul>
+<p>Ignora los adaptadores <em>vEthernet (WSL)</em> y <em>Docker</em>: son redes virtuales internas.</p>
+  </div>
+  <div class="tab" data-label="Linux">
+<pre><code class="language-bash">ip -4 addr show | grep inet</code></pre>
+<ul>
+  <li>Con hotspot: la interfaz WiFi mostrará <code>10.42.0.1/24</code>.</li>
+  <li>Con router: algo como <code>192.168.1.50/24</code> en <code>wlan0</code>/<code>wlp2s0</code>.</li>
+</ul>
+<p>Ignora <code>docker0</code> (<code>172.17.0.1</code>) y <code>lo</code> (<code>127.0.0.1</code>).</p>
+  </div>
+</div>
+
+<div class="callout danger">
+  <span class="callout-title">No uses localhost en la ESP32</span>
+  <p><code>localhost</code> / <code>127.0.0.1</code> significa “yo mismo”. Para la ESP32 eso es la propia ESP32, no tu computador.</p>
+</div>
+
+<h2>Abrir el puerto 8000 en el firewall</h2>
+<p>Por defecto el firewall puede bloquear conexiones entrantes desde otros dispositivos.</p>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<p>PowerShell <strong>como administrador</strong>:</p>
+<pre><code class="language-powershell">New-NetFirewallRule -DisplayName "Backend ESP32 8000" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow -Profile Private,Public
+New-NetFirewallRule -DisplayName "Frontend 3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -Profile Private,Public</code></pre>
+<p>Para eliminarlas después: <code>Remove-NetFirewallRule -DisplayName "Backend ESP32 8000"</code>.</p>
+  </div>
+  <div class="tab" data-label="Linux">
+<p>Ubuntu trae <code>ufw</code> desactivado por defecto. Si lo tienes activo:</p>
+<pre><code class="language-bash">sudo ufw allow 8000/tcp
+sudo ufw allow 3000/tcp</code></pre>
+<p>Nota: Docker publica los puertos insertando sus propias reglas de <code>iptables</code>, que normalmente tienen prioridad sobre <code>ufw</code>.</p>
+  </div>
+</div>
+
+<h3>Comprobar desde otro dispositivo</h3>
+<p>Conecta tu celular a la misma red y abre <code>http://&lt;IP-del-PC&gt;:8000/mensaje</code>. Si ves el JSON, la ESP32 también podrá llegar.</p>
+
+<h2>Crear config.h</h2>
+<p>El sketch lee la configuración de <code>esp32/esp32_mensaje/config.h</code>. Ese archivo <strong>no está en el repositorio</strong> (está en <code>.gitignore</code>) para no publicar contraseñas; se crea a partir de la plantilla:</p>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<pre><code class="language-powershell">Copy-Item esp32\esp32_mensaje\config.example.h esp32\esp32_mensaje\config.h
+notepad esp32\esp32_mensaje\config.h</code></pre>
+  </div>
+  <div class="tab" data-label="Linux">
+<pre><code class="language-bash">cp esp32/esp32_mensaje/config.example.h esp32/esp32_mensaje/config.h
+nano esp32/esp32_mensaje/config.h</code></pre>
+  </div>
+</div>
+<p>Edita los cuatro valores:</p>
+<pre data-title="esp32/esp32_mensaje/config.h"><code class="language-cpp">#pragma once
+
+// Red WiFi a la que se conectara la ESP32 (solo 2.4 GHz)
+#define WIFI_SSID     "MiHotspot"
+#define WIFI_PASSWORD "clave-segura-123"
+
+// IP del equipo donde corre Docker (backend)
+#define BACKEND_HOST  "192.168.137.1"   // Windows hotspot; Linux hotspot: "10.42.0.1"
+#define BACKEND_PORT  8000</code></pre>
+
+<table>
+  <thead><tr><th>Constante</th><th>Qué poner</th></tr></thead>
+  <tbody>
+    <tr><td><code>WIFI_SSID</code></td><td>Nombre exacto de la red (distingue mayúsculas).</td></tr>
+    <tr><td><code>WIFI_PASSWORD</code></td><td>Contraseña de la red.</td></tr>
+    <tr><td><code>BACKEND_HOST</code></td><td>La IP que encontraste arriba, entre comillas.</td></tr>
+    <tr><td><code>BACKEND_PORT</code></td><td><code>8000</code>, salvo que cambies el puerto en <code>docker-compose.yml</code>.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout tip">
+  <span class="callout-title">Verifica que no se suba</span>
+  <p><code>git status</code> no debe listar <code>config.h</code>. Puedes confirmarlo con <code>git check-ignore -v esp32/esp32_mensaje/config.h</code>.</p>
+</div>
+
+<p>Continúa con <a href="programar-esp32.html">7. Programar la ESP32</a>.</p>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

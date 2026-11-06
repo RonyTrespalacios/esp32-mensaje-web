@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La placa ESP32 · ESP32 Mensaje Web</title>
+<meta name="description" content="Componentes de la placa DevKit, pines, alimentación y precauciones">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="hardware/esp32.html">
+<article class="doc">
+<h1>La placa ESP32</h1>
+<p class="lead">Qué hay en una placa ESP32 DevKit, para qué sirve cada parte y qué precauciones tener al conectarle cosas.</p>
+
+<h2>El SoC ESP32</h2>
+<p>El ESP32 de Espressif es un <strong>System on Chip</strong>: procesador, memoria, radio WiFi/Bluetooth y periféricos en un solo encapsulado. Normalmente viene dentro de un <strong>módulo</strong> metálico (ESP32-WROOM-32) que añade la memoria flash, el cristal y la antena en el PCB.</p>
+<table>
+  <thead><tr><th>Característica</th><th>ESP32-WROOM-32 típico</th></tr></thead>
+  <tbody>
+    <tr><td>CPU</td><td>Xtensa LX6 de doble núcleo, hasta 240 MHz</td></tr>
+    <tr><td>RAM</td><td>520 KB SRAM interna</td></tr>
+    <tr><td>Flash</td><td>4 MB (externa, dentro del módulo)</td></tr>
+    <tr><td>Radio</td><td>WiFi 802.11 b/g/n <strong>2.4 GHz</strong>; Bluetooth 4.2 + BLE</td></tr>
+    <tr><td>Lógica</td><td><strong>3.3 V</strong> (los pines <strong>no</strong> toleran 5 V)</td></tr>
+    <tr><td>Periféricos</td><td>GPIO, ADC 12 bits, DAC, PWM (LEDC), I²C, SPI, UART, táctil capacitivo</td></tr>
+  </tbody>
+</table>
+
+<h2>Anatomía de la placa DevKit</h2>
+<pre class="mermaid">
+flowchart TB
+    USBC["Conector USB&lt;br/&gt;(micro-USB / USB-C)"]
+    BR["Puente USB-UART&lt;br/&gt;CH340 / CP2102"]
+    LDO["Regulador LDO&lt;br/&gt;5 V → 3.3 V (AMS1117)"]
+    AUTO["Circuito auto-reset&lt;br/&gt;(2 transistores: DTR/RTS)"]
+    MOD["Módulo ESP32-WROOM-32&lt;br/&gt;SoC + flash 4 MB + antena"]
+    EN["Botón EN&lt;br/&gt;(reset)"]
+    BOOT["Botón BOOT&lt;br/&gt;(GPIO0)"]
+    LED["LED azul&lt;br/&gt;(GPIO2 en muchas placas)"]
+    PINS["Pines laterales&lt;br/&gt;GPIO, 3V3, GND, VIN"]
+
+    USBC -- "D+/D−" --> BR
+    USBC -- "5 V" --> LDO
+    LDO -- "3.3 V" --> MOD
+    BR -- "TX/RX (UART0)" --> MOD
+    BR -- "DTR/RTS" --> AUTO
+    AUTO -- "EN y GPIO0" --> MOD
+    EN --> MOD
+    BOOT --> MOD
+    MOD --> LED
+    MOD --- PINS
+</pre>
+
+<table>
+  <thead><tr><th>Parte</th><th>Función</th></tr></thead>
+  <tbody>
+    <tr><td>Puente USB-UART</td><td>Convierte USB en serie (UART). El PC lo ve como <code>COMx</code>/<code>/dev/ttyUSB0</code>. Por aquí se carga el firmware y viaja el Monitor Serie.</td></tr>
+    <tr><td>Regulador</td><td>Baja los 5 V del USB a los 3.3 V que necesita el ESP32. Aguanta ~800 mA; el ESP32 consume picos de ~250 mA al transmitir por WiFi.</td></tr>
+    <tr><td>Auto-reset</td><td>esptool usa las líneas DTR/RTS para poner GPIO0 en bajo y reiniciar: así entra solo en modo programación. Si falla, se hace a mano con <strong>BOOT</strong>.</td></tr>
+    <tr><td>EN</td><td>Reinicia el chip (vuelve a ejecutar <code>setup()</code>).</td></tr>
+    <tr><td>BOOT</td><td>Mantenido al arrancar, el ESP32 entra en el bootloader de la ROM y espera firmware.</td></tr>
+  </tbody>
+</table>
+
+<h2>Pines: qué usar y qué evitar</h2>
+<table>
+  <thead><tr><th>Pines</th><th>Notas</th></tr></thead>
+  <tbody>
+    <tr><td>GPIO 4, 13, 16–19, 21–23, 25–27, 32, 33</td><td>✅ Seguros para uso general (LEDs, botones, sensores). 21/22 son I²C por defecto.</td></tr>
+    <tr><td>GPIO 34, 35, 36 (VP), 39 (VN)</td><td>⚠️ Solo <strong>entrada</strong>, sin pull-up interno.</td></tr>
+    <tr><td>GPIO 0, 2, 5, 12, 15</td><td>⚠️ Pines de <em>strapping</em>: su nivel al arrancar define el modo de boot. Úsalos con cuidado.</td></tr>
+    <tr><td>GPIO 6–11</td><td>⛔ Conectados a la flash interna. <strong>No usar.</strong></td></tr>
+    <tr><td>GPIO 1 (TX0), 3 (RX0)</td><td>⛔ Usados por el Monitor Serie y la programación.</td></tr>
+    <tr><td>ADC2 (GPIO 0, 2, 4, 12–15, 25–27)</td><td>⚠️ Las lecturas analógicas de ADC2 <strong>no funcionan con WiFi activo</strong>. Usa ADC1 (32–39).</td></tr>
+  </tbody>
+</table>
+
+<div class="callout danger">
+  <span class="callout-title">3.3 V, no 5 V</span>
+  <p>Conectar una señal de 5 V (p. ej. de un Arduino UNO o un sensor de 5 V) directamente a un GPIO puede dañar el chip. Usa un divisor resistivo o un conversor de nivel.</p>
+</div>
+
+<h2>Alimentación</h2>
+<ul>
+  <li><strong>Por USB</strong> (lo normal en este proyecto): 5 V del PC.</li>
+  <li><strong>Por VIN/5V</strong>: 5 V de una fuente externa (pasa por el regulador).</li>
+  <li><strong>Por 3V3</strong>: 3.3 V regulados directamente (sin pasar por el regulador). No alimentes por 3V3 y USB a la vez.</li>
+</ul>
+<p>Si la placa se reinicia sola al conectar el WiFi (<em>brownout detector was triggered</em>), suele ser un cable USB largo/fino o un puerto USB que no entrega suficiente corriente.</p>
+
+<h2>WiFi del ESP32</h2>
+<ul>
+  <li>Solo <strong>2.4 GHz</strong> (canales 1–13). No ve redes de 5 GHz.</li>
+  <li>Soporta WPA/WPA2-Personal (y WPA3 en versiones recientes del core). <strong>No</strong> soporta redes con portal cautivo sin código adicional, y WPA2-Enterprise (usuario + contraseña, como eduroam) requiere configuración especial.</li>
+  <li>Modos: <em>Station</em> (cliente, el que usamos), <em>Access Point</em> o ambos a la vez.</li>
+  <li>Antena en el PCB: evita cubrir el extremo del módulo con metal o la mano.</li>
+</ul>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

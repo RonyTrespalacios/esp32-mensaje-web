@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visión general · ESP32 Mensaje Web</title>
+<meta name="description" content="Componentes del sistema y sus responsabilidades">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="arquitectura/vision-general.html">
+<article class="doc">
+<h1>Visión general de la arquitectura</h1>
+<p class="lead">El sistema tiene tres componentes de software que se comunican exclusivamente por <strong>HTTP</strong>. Ninguno conoce los detalles internos de los otros: solo el contrato de la API.</p>
+
+<h2>Diagrama de componentes</h2>
+<pre class="mermaid">
+flowchart LR
+    subgraph PC["💻 Computador (Windows / Linux + Docker)"]
+        direction TB
+        subgraph DC["docker compose"]
+            FE["mensaje-frontend&lt;br/&gt;nginx:alpine&lt;br/&gt;:3000 → :80"]
+            BE["mensaje-backend&lt;br/&gt;FastAPI + uvicorn&lt;br/&gt;:8000"]
+        end
+        BR["🌐 Navegador"]
+    end
+    ESP["📟 ESP32&lt;br/&gt;esp32_mensaje.ino"]
+    SER["🖥️ Monitor Serie&lt;br/&gt;115200 baud"]
+
+    BR -- "1. GET :3000 (HTML/CSS/JS)" --> FE
+    BR -- "2. GET/PUT /mensaje (JSON)" --> BE
+    ESP -- "3. GET /mensaje/texto cada 1 s" --> BE
+    ESP -- "USB" --> SER
+</pre>
+<p class="figcaption">Figura 1. Componentes y conexiones. El navegador habla con <strong>dos</strong> servidores distintos.</p>
+
+<h2>Responsabilidades</h2>
+<table>
+  <thead><tr><th>Componente</th><th>Tecnología</th><th>Puerto</th><th>Responsabilidad</th><th>Código</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Frontend</strong></td><td>HTML + CSS + JS estático servido por nginx</td><td>3000</td><td>Interfaz para ver y editar el mensaje.</td><td><code>frontend/</code></td></tr>
+    <tr><td><strong>Backend</strong></td><td>Python 3.12, FastAPI, uvicorn</td><td>8000</td><td>Fuente única de verdad: guarda el mensaje y lo expone por HTTP.</td><td><code>backend/main.py</code></td></tr>
+    <tr><td><strong>Firmware</strong></td><td>C++ / Arduino core para ESP32</td><td>—</td><td>Consultar el mensaje periódicamente y reaccionar a cambios.</td><td><code>esp32/esp32_mensaje/</code></td></tr>
+    <tr><td><strong>Orquestación</strong></td><td>Docker Compose</td><td>—</td><td>Construir y arrancar backend y frontend con una configuración declarativa.</td><td><code>docker-compose.yml</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Decisiones de diseño</h2>
+<h3>Cliente–servidor con un único estado central</h3>
+<p>El mensaje vive <strong>solo</strong> en el backend. Navegador y ESP32 son clientes que leen (y el navegador también escribe). Así no hay que sincronizar copias: quien quiera el valor actual, lo pide.</p>
+
+<h3>Polling en lugar de push</h3>
+<p>La ESP32 <em>pregunta</em> cada segundo (<em>polling</em>) en vez de que el servidor le <em>avise</em> (WebSocket, MQTT…). Es menos eficiente, pero:</p>
+<ul>
+  <li>La ESP32 no necesita aceptar conexiones entrantes (funciona aunque esté detrás de NAT o firewall).</li>
+  <li>El código es mínimo y fácil de razonar.</li>
+  <li>Si se pierde la red, no hay estado que recuperar: la siguiente petición simplemente funciona.</li>
+</ul>
+<p>Coste: hasta 1 s de latencia y ~86 400 peticiones al día. Ver <a href="flujo.html">Flujo de datos y tiempos</a> y alternativas en <a href="../guias/extender.html">Extender el proyecto</a>.</p>
+
+<h3>Dos representaciones del mismo recurso</h3>
+<p>El backend ofrece el mensaje como JSON (<code>/mensaje</code>) para el navegador y como texto plano (<code>/mensaje/texto</code>) para la ESP32. El texto plano evita tener que incluir una librería de JSON en el microcontrolador.</p>
+
+<h3>Estado en memoria</h3>
+<p>El mensaje es una variable global de Python. Es suficiente para un ejemplo didáctico, pero se pierde al reiniciar el contenedor y no escala a varios procesos. Ver <a href="../guias/extender.html#persistir-el-mensaje">cómo persistirlo</a>.</p>
+
+<h3>Configuración fuera del código</h3>
+<p>Lo que depende del entorno (WiFi, IP) está en <code>config.h</code>, fuera del control de versiones. El frontend deduce la URL del backend a partir de <code>window.location.hostname</code>, así que funciona igual en <code>localhost</code> o desde un celular sin cambiar nada.</p>
+
+<h2>Contrato entre componentes</h2>
+<table>
+  <thead><tr><th>Cliente</th><th>Petición</th><th>Respuesta</th></tr></thead>
+  <tbody>
+    <tr><td>Navegador</td><td><span class="badge get">GET</span> <code>/mensaje</code></td><td><code>{"mensaje": "..."}</code></td></tr>
+    <tr><td>Navegador</td><td><span class="badge put">PUT</span> <code>/mensaje</code> con <code>{"mensaje": "..."}</code></td><td><code>{"mensaje": "..."}</code></td></tr>
+    <tr><td>ESP32</td><td><span class="badge get">GET</span> <code>/mensaje/texto</code></td><td><code>...</code> (text/plain)</td></tr>
+  </tbody>
+</table>
+<p>Detalle completo en la <a href="../backend/api.html">Referencia de la API</a>.</p>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bienvenida · ESP32 Mensaje Web</title>
+<meta name="description" content="Documentación del ejemplo ESP32 + FastAPI + web">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="" data-page="index.html">
+<article class="doc">
+<div class="hero">
+  <h1>ESP32 Mensaje Web</h1>
+  <p class="lead">Un sistema IoT mínimo y completo: una <strong>página web</strong> edita un mensaje, un <strong>backend FastAPI</strong> en Docker lo guarda y una <strong>ESP32</strong> lo consulta por WiFi y lo muestra en el Monitor Serie.</p>
+  <div class="btns">
+    <a class="btn primary" href="inicio/requisitos.html">Empezar (Getting Started) →</a>
+    <a class="btn" href="arquitectura/vision-general.html">Ver la arquitectura</a>
+    <a class="btn" href="https://github.com/RonyTrespalacios/esp32-mensaje-web">Código en GitHub</a>
+  </div>
+</div>
+
+<p>Este proyecto es un ejemplo de clase de <strong>Máquinas Digitales (Unillanos, 2026-2)</strong>. Está pensado para que, partiendo de un computador recién instalado con <strong>Windows</strong> o <strong>Linux</strong>, puedas montar todo el sistema, entender cada pieza y luego extenderlo.</p>
+
+<pre class="mermaid">
+flowchart LR
+    U["👤 Usuario"] -->|escribe mensaje| W["🌐 Frontend&lt;br/&gt;nginx :3000"]
+    W -->|PUT /mensaje| B["⚙️ Backend&lt;br/&gt;FastAPI :8000"]
+    E["📟 ESP32"] -->|GET /mensaje/texto&lt;br/&gt;cada 1 s| B
+    E -->|USB Serial| S["🖥️ Monitor Serie"]
+</pre>
+<p class="figcaption">Figura 1. El sistema completo en una línea.</p>
+
+<h2>¿Qué vas a aprender?</h2>
+<ul>
+  <li>Preparar un <strong>workspace</strong> de desarrollo embebido + web (Git, Docker, Arduino IDE, drivers USB-Serial).</li>
+  <li>Levantar servicios con <strong>Docker Compose</strong> (backend Python y servidor web nginx).</li>
+  <li>Diseñar una <strong>API REST</strong> sencilla con FastAPI y consumirla desde un navegador y desde un microcontrolador.</li>
+  <li>Conectar una <strong>ESP32</strong> a WiFi y hacer peticiones HTTP con <code>HTTPClient</code>.</li>
+  <li>Distinguir la <strong>vista física</strong> (cables, radio, placas) de la <strong>vista lógica</strong> (IPs, puertos, protocolos).</li>
+  <li>Diagnosticar fallos típicos: puerto COM, firewall, IP equivocada, red de 5 GHz…</li>
+</ul>
+
+<h2>Mapa de la documentación</h2>
+<div class="cards">
+  <a class="card" href="inicio/requisitos.html"><div class="card-kicker">Primeros pasos</div><h3>Getting Started</h3><p>De cero a la ESP32 imprimiendo mensajes, paso a paso, en Windows o Linux.</p></a>
+  <a class="card" href="arquitectura/vision-general.html"><div class="card-kicker">Arquitectura</div><h3>Cómo encaja todo</h3><p>Componentes, vistas física y lógica, flujo de datos y tiempos.</p></a>
+  <a class="card" href="backend/fastapi.html"><div class="card-kicker">Backend</div><h3>FastAPI + Docker</h3><p>El código de <code>main.py</code> línea por línea, la API y los contenedores.</p></a>
+  <a class="card" href="frontend/html-css.html"><div class="card-kicker">Frontend</div><h3>HTML, CSS y JS</h3><p>La página que edita el mensaje y cómo habla con la API.</p></a>
+  <a class="card" href="hardware/esp32.html"><div class="card-kicker">Hardware</div><h3>ESP32 y firmware</h3><p>La placa, el chip USB-Serial y el sketch de Arduino explicado.</p></a>
+  <a class="card" href="guias/extender.html"><div class="card-kicker">Guías</div><h3>Extender el proyecto</h3><p>Encender un LED, persistir el mensaje, ideas de ejercicios.</p></a>
+</div>
+
+<h2>Estructura del repositorio</h2>
+<pre data-title="esp32-mensaje-web/"><code class="language-plaintext">.
+├── docker-compose.yml          # Levanta backend (8000) y frontend (3000)
+├── backend/
+│   ├── Dockerfile              # Imagen python:3.12-slim + uvicorn
+│   ├── main.py                 # API FastAPI (mensaje en memoria)
+│   └── requirements.txt
+├── frontend/
+│   ├── index.html              # Formulario para editar el mensaje
+│   ├── app.js                  # Llama a la API en http://&lt;host&gt;:8000
+│   └── styles.css
+├── esp32/
+│   └── esp32_mensaje/
+│       ├── esp32_mensaje.ino   # Sketch de Arduino
+│       ├── config.example.h    # Plantilla de configuración (se sube)
+│       └── config.h            # Tu WiFi e IP reales (NO se sube)
+└── docs/                       # Esta documentación (GitHub Pages)</code></pre>
+
+<div class="callout warning">
+  <span class="callout-title">🔒 Credenciales</span>
+  <p>Las credenciales WiFi <strong>nunca</strong> se suben al repositorio. Viven en <code>esp32/esp32_mensaje/config.h</code>, que está en <code>.gitignore</code>. En el repo solo está la plantilla <code>config.example.h</code>.</p>
+</div>
+
+<h2>Cómo usar esta documentación</h2>
+<ul>
+  <li>El <strong>panel izquierdo</strong> agrupa las secciones; haz clic en un grupo para expandirlo o colapsarlo, o usa <em>Expandir todo / Colapsar todo</em>.</li>
+  <li>Bajo la página actual aparecen sus <strong>subsecciones</strong> para saltar directamente.</li>
+  <li>Presiona <kbd>/</kbd> para buscar en el índice y <kbd>Enter</kbd> para abrir el primer resultado.</li>
+  <li>Donde los pasos difieren entre sistemas operativos verás pestañas <strong>Windows / Linux</strong>; tu elección se recuerda en todas las páginas.</li>
+  <li>Cada bloque de código tiene un botón <strong>Copiar</strong>.</li>
+</ul>
+</article>
+<script src="assets/js/docs.js"></script>
+</body>
+</html>

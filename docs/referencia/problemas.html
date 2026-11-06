@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solución de problemas · ESP32 Mensaje Web</title>
+<meta name="description" content="Errores comunes de instalación, carga, red y Docker con su solución">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="referencia/problemas.html">
+<article class="doc">
+<h1>Solución de problemas</h1>
+<p class="lead">Organizado por síntoma. Si no sabes por dónde empezar, sigue el diagrama.</p>
+
+<h2>Diagnóstico rápido</h2>
+<pre class="mermaid">
+flowchart TD
+    A{"¿Aparece el puerto COM / ttyUSB?"} -- No --> A1["Cable de datos, driver, dialout/brltty"]
+    A -- Sí --> B{"¿Carga el firmware?"}
+    B -- No --> B1["Botón BOOT, Upload Speed, placa correcta"]
+    B -- Sí --> C{"¿Monitor Serie legible?"}
+    C -- No --> C1["115200 baud"]
+    C -- Sí --> D{"¿Dice 'Conectado'?"}
+    D -- No --> D1["SSID/clave, 2.4 GHz, portal cautivo"]
+    D -- Sí --> E{"¿'Nuevo mensaje' o 'Error HTTP'?"}
+    E -- "Error HTTP -1" --> E1["BACKEND_HOST, Docker, firewall, misma subred"]
+    E -- "Nuevo mensaje" --> F["✅ Todo funciona"]
+</pre>
+
+<h2>Placa y carga</h2>
+<table>
+  <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Solución</th></tr></thead>
+  <tbody>
+    <tr><td>No aparece ningún puerto</td><td>Cable de solo carga o falta el driver.</td><td>Prueba otro cable; instala CH340/CP210x (<a href="../inicio/arduino-ide.html#instalar-el-driver">paso 5</a>).</td></tr>
+    <tr><td>Linux: el puerto aparece y desaparece</td><td><code>brltty</code> se apropia del CH340.</td><td><code>sudo apt remove brltty</code></td></tr>
+    <tr><td>Linux: <code>Permission denied: '/dev/ttyUSB0'</code></td><td>Usuario fuera de <code>dialout</code>.</td><td><code>sudo usermod -aG dialout $USER</code> y volver a iniciar sesión.</td></tr>
+    <tr><td><code>Failed to connect to ESP32: No serial data received</code> / se queda en <code>Connecting....</code></td><td>No entra en modo bootloader.</td><td>Mantén <strong>BOOT</strong> al empezar la carga; baja <em>Upload Speed</em> a 115200.</td></tr>
+    <tr><td><code>A fatal error occurred: Could not open COMx, the port is busy</code></td><td>Otro programa usa el puerto.</td><td>Cierra otros Monitores Serie, PuTTY, Cura…</td></tr>
+    <tr><td><code>fatal error: config.h: No such file or directory</code></td><td>No creaste <code>config.h</code>.</td><td>Copia <code>config.example.h</code> → <code>config.h</code> (<a href="../inicio/configurar-red.html#crear-configh">paso 6</a>).</td></tr>
+    <tr><td><code>WiFi.h: No such file</code> o no aparece “ESP32 Dev Module”</td><td>Paquete de placas no instalado o placa equivocada.</td><td>Instala <em>esp32 by Espressif Systems</em> y selecciona la placa ESP32.</td></tr>
+    <tr><td><code>Brownout detector was triggered</code> en bucle</td><td>Alimentación insuficiente al encender el WiFi.</td><td>Otro cable/puerto USB, evitar hubs sin alimentación.</td></tr>
+  </tbody>
+</table>
+
+<h2>WiFi</h2>
+<table>
+  <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Solución</th></tr></thead>
+  <tbody>
+    <tr><td>Puntos infinitos <code>.......</code></td><td>SSID o clave incorrectos.</td><td>Revisa mayúsculas, espacios y comillas en <code>config.h</code>.</td></tr>
+    <tr><td>Puntos infinitos con datos correctos</td><td>Red de 5 GHz.</td><td>Configura el hotspot/router en 2.4 GHz.</td></tr>
+    <tr><td>Conecta pero nunca llega al backend en la red de la universidad</td><td>Portal cautivo o aislamiento de clientes.</td><td>Usa el hotspot del computador.</td></tr>
+    <tr><td><code>WiFi desconectado, reconectando...</code> frecuente</td><td>Señal débil.</td><td>Acerca la placa; no tapes la antena del módulo.</td></tr>
+  </tbody>
+</table>
+
+<h2>Red y backend</h2>
+<table>
+  <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Solución</th></tr></thead>
+  <tbody>
+    <tr><td><code>Error HTTP: -1</code></td><td>No hay conexión TCP con <code>BACKEND_HOST:8000</code>.</td><td>1) IP correcta (<code>ipconfig</code>/<code>ip a</code>); 2) misma subred que la ESP32; 3) <code>docker compose ps</code>; 4) firewall.</td></tr>
+    <tr><td><code>Error HTTP: -11</code></td><td>Timeout: el host responde lento o filtra paquetes.</td><td>Revisa firewall/antivirus.</td></tr>
+    <tr><td><code>Error HTTP: 404</code></td><td>Otro servicio en ese puerto o ruta mal escrita.</td><td>Abre la URL impresa por la ESP32 en el navegador.</td></tr>
+    <tr><td>La IP del PC cambió de un día a otro</td><td>DHCP del router.</td><td>Usa el hotspot (IP fija) o reserva la IP en el router.</td></tr>
+    <tr><td>Desde el celular no abre <code>IP:3000</code></td><td>Firewall o red distinta.</td><td>Reglas de la <a href="../inicio/configurar-red.html#abrir-el-puerto-8000-en-el-firewall">sección de firewall</a>.</td></tr>
+  </tbody>
+</table>
+
+<h2>Docker</h2>
+<table>
+  <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Solución</th></tr></thead>
+  <tbody>
+    <tr><td><code>error during connect … pipe/docker_engine</code> (Windows)</td><td>Docker Desktop cerrado.</td><td>Ábrelo y espera <em>Engine running</em>.</td></tr>
+    <tr><td><code>permission denied … /var/run/docker.sock</code> (Linux)</td><td>Usuario fuera del grupo <code>docker</code>.</td><td><code>sudo usermod -aG docker $USER</code> y re-login.</td></tr>
+    <tr><td><code>Bind for 0.0.0.0:8000 failed: port is already allocated</code></td><td>Otro programa usa el 8000.</td><td>Ciérralo o cambia el puerto (<a href="configuracion.html#puertos">ver</a>).</td></tr>
+    <tr><td>Docker Desktop: <em>WSL 2 installation is incomplete</em></td><td>WSL desactualizado.</td><td><code>wsl --update</code> y reiniciar.</td></tr>
+    <tr><td>Docker Desktop: <em>Virtualization support not detected</em></td><td>VT-x/AMD-V desactivado.</td><td>Actívalo en la BIOS/UEFI.</td></tr>
+    <tr><td>Cambié <code>main.py</code> y no se nota</td><td>No se reconstruyó la imagen.</td><td><code>docker compose up -d --build</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Frontend</h2>
+<table>
+  <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Solución</th></tr></thead>
+  <tbody>
+    <tr><td>“Error conectando al backend”</td><td>Backend caído o puerto bloqueado.</td><td><code>docker compose ps</code>, <code>docker compose logs backend</code>.</td></tr>
+    <tr><td>Consola del navegador: <em>blocked by CORS policy</em></td><td>Se quitó/restringió el middleware CORS.</td><td>Revisa <code>allow_origins</code> en <code>main.py</code>.</td></tr>
+    <tr><td>Los cambios de CSS/JS no aparecen</td><td>Caché del navegador.</td><td><kbd>Ctrl</kbd>+<kbd>F5</kbd>.</td></tr>
+    <tr><td>El mensaje volvió a “Hola mundo”</td><td>Se reinició el backend (estado en memoria).</td><td>Normal. Ver <a href="../guias/extender.html#persistir-el-mensaje">persistencia</a>.</td></tr>
+  </tbody>
+</table>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Código FastAPI · ESP32 Mensaje Web</title>
+<meta name="description" content="Explicación línea por línea de backend/main.py">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="backend/fastapi.html">
+<article class="doc">
+<h1>Código FastAPI (<code>main.py</code>)</h1>
+<p class="lead">Todo el backend cabe en un archivo de 40 líneas. Aquí lo recorremos bloque por bloque y explicamos los conceptos que usa.</p>
+
+<h2>¿Qué es FastAPI?</h2>
+<p><a href="https://fastapi.tiangolo.com/">FastAPI</a> es un framework web para Python que convierte funciones normales en <em>endpoints</em> HTTP. Usa las <strong>anotaciones de tipo</strong> de Python para validar automáticamente los datos de entrada y generar documentación interactiva (<code>/docs</code>). No sirve peticiones por sí solo: lo ejecuta un servidor <strong>ASGI</strong> llamado <strong>uvicorn</strong>.</p>
+<pre class="mermaid">
+flowchart LR
+    C["Cliente HTTP"] --> U["uvicorn&lt;br/&gt;(servidor ASGI)"]
+    U --> M["Middleware CORS"]
+    M --> R["Router de FastAPI"]
+    R --> F["Función Python&lt;br/&gt;obtener_mensaje()"]
+    F --> R --> M --> U --> C
+</pre>
+
+<h2>Código completo</h2>
+<pre data-title="backend/main.py"><code class="language-python">from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel
+
+app = FastAPI(title="Mensaje API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Almacenamiento simple en memoria
+mensaje: str = "Hola mundo"
+
+
+class Mensaje(BaseModel):
+    mensaje: str
+
+
+@app.get("/mensaje")
+def obtener_mensaje():
+    """Devuelve el mensaje en JSON: {"mensaje": "..."}"""
+    return {"mensaje": mensaje}
+
+
+@app.get("/mensaje/texto", response_class=PlainTextResponse)
+def obtener_mensaje_texto():
+    """Devuelve el mensaje como texto plano (ideal para la ESP32)."""
+    return mensaje
+
+
+@app.put("/mensaje")
+def actualizar_mensaje(datos: Mensaje):
+    global mensaje
+    mensaje = datos.mensaje
+    return {"mensaje": mensaje}</code></pre>
+
+<h2>Bloque por bloque</h2>
+
+<h3>Importaciones</h3>
+<pre><code class="language-python">from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel</code></pre>
+<ul>
+  <li><code>FastAPI</code>: la clase de la aplicación.</li>
+  <li><code>CORSMiddleware</code>: permite que páginas servidas desde <em>otro origen</em> llamen a esta API (ver abajo).</li>
+  <li><code>PlainTextResponse</code>: respuesta con <code>Content-Type: text/plain</code> en lugar de JSON.</li>
+  <li><code>BaseModel</code> (de <strong>Pydantic</strong>): define la forma de los datos de entrada y los valida.</li>
+</ul>
+
+<h3>La aplicación</h3>
+<pre><code class="language-python">app = FastAPI(title="Mensaje API")</code></pre>
+<p>Crea el objeto <code>app</code>. El nombre importa: el <code>Dockerfile</code> arranca <code>uvicorn main:app</code>, es decir, “el objeto <code>app</code> del módulo <code>main</code>”. El <code>title</code> aparece en <code>/docs</code>.</p>
+
+<h3>CORS</h3>
+<pre><code class="language-python">app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)</code></pre>
+<p>El navegador aplica la <strong>política del mismo origen</strong>: una página cargada desde <code>http://localhost:3000</code> no puede leer respuestas de <code>http://localhost:8000</code> (otro puerto = otro origen) salvo que el servidor lo autorice con cabeceras <code>Access-Control-Allow-*</code>. Este middleware añade esas cabeceras.</p>
+<pre class="mermaid">
+sequenceDiagram
+    participant B as Navegador (origen :3000)
+    participant API as API :8000
+    B->>API: OPTIONS /mensaje (preflight del PUT)
+    API-->>B: Access-Control-Allow-Origin *, Allow-Methods *
+    B->>API: PUT /mensaje
+    API-->>B: 200 + Access-Control-Allow-Origin *
+</pre>
+<div class="callout warning">
+  <span class="callout-title">Solo para desarrollo</span>
+  <p><code>"*"</code> permite a <strong>cualquier</strong> web llamar a la API. En producción se restringe, p. ej. <code>allow_origins=["http://192.168.137.1:3000"]</code>. La ESP32 no es un navegador, así que CORS no le afecta.</p>
+</div>
+
+<h3>El estado</h3>
+<pre><code class="language-python">mensaje: str = "Hola mundo"</code></pre>
+<p>Una variable global del módulo. Vive en la RAM del proceso de uvicorn: se pierde al reiniciar el contenedor. La anotación <code>: str</code> es solo documentación (Python no la impone).</p>
+
+<h3>El modelo de entrada</h3>
+<pre><code class="language-python">class Mensaje(BaseModel):
+    mensaje: str</code></pre>
+<p>Describe el cuerpo JSON que espera el <code>PUT</code>: un objeto con un campo <code>mensaje</code> de tipo texto. Si el cliente envía algo distinto (falta el campo, o envía un objeto), FastAPI responde automáticamente <strong>422 Unprocessable Entity</strong> con el detalle del error, sin ejecutar tu función.</p>
+
+<h3><span class="badge get">GET</span> /mensaje</h3>
+<pre><code class="language-python">@app.get("/mensaje")
+def obtener_mensaje():
+    return {"mensaje": mensaje}</code></pre>
+<p>El <strong>decorador</strong> <code>@app.get("/mensaje")</code> registra la función para las peticiones <code>GET</code> a esa ruta. Devolver un <code>dict</code> hace que FastAPI lo serialice a JSON. El <em>docstring</em> aparece como descripción en <code>/docs</code>.</p>
+
+<h3><span class="badge get">GET</span> /mensaje/texto</h3>
+<pre><code class="language-python">@app.get("/mensaje/texto", response_class=PlainTextResponse)
+def obtener_mensaje_texto():
+    return mensaje</code></pre>
+<p>Igual que el anterior, pero con <code>response_class=PlainTextResponse</code>: la respuesta es el texto “crudo” (<code>Hola mundo</code>), no <code>{"mensaje":"Hola mundo"}</code>. Así la ESP32 puede usar <code>http.getString()</code> directamente sin parsear JSON.</p>
+
+<h3><span class="badge put">PUT</span> /mensaje</h3>
+<pre><code class="language-python">@app.put("/mensaje")
+def actualizar_mensaje(datos: Mensaje):
+    global mensaje
+    mensaje = datos.mensaje
+    return {"mensaje": mensaje}</code></pre>
+<ul>
+  <li>Como el parámetro <code>datos</code> está anotado con un <code>BaseModel</code>, FastAPI sabe que debe leerlo del <strong>cuerpo</strong> de la petición, parsear el JSON y validarlo.</li>
+  <li><code>global mensaje</code> es necesario porque se <em>asigna</em> la variable del módulo; sin él, Python crearía una variable local.</li>
+  <li>Se devuelve el nuevo valor para que el cliente confirme lo guardado.</li>
+</ul>
+<p>Se usa <code>PUT</code> (y no <code>POST</code>) porque la operación <strong>reemplaza</strong> el recurso completo y es <strong>idempotente</strong>: enviarla dos veces deja el mismo estado.</p>
+
+<h2>Dependencias</h2>
+<pre data-title="backend/requirements.txt"><code class="language-plaintext">fastapi==0.115.6
+uvicorn[standard]==0.34.0</code></pre>
+<p>Las versiones están fijadas (<code>==</code>) para que la imagen se construya igual en cualquier máquina. <code>[standard]</code> instala extras de uvicorn como <code>uvloop</code> y <code>httptools</code> (más rendimiento) y soporte de WebSockets. Pydantic llega como dependencia de FastAPI.</p>
+
+<h2>Ejecutar sin Docker (opcional)</h2>
+<p>Útil para depurar con breakpoints. Requiere Python 3.10+.</p>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<pre><code class="language-powershell">cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn main:app --reload --host 0.0.0.0 --port 8000</code></pre>
+  </div>
+  <div class="tab" data-label="Linux">
+<pre><code class="language-bash">cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --host 0.0.0.0 --port 8000</code></pre>
+  </div>
+</div>
+<p><code>--reload</code> reinicia el servidor al guardar cambios. Detén antes el contenedor (<code>docker compose stop backend</code>) para liberar el puerto 8000.</p>
+
+<h2>Limitaciones conocidas</h2>
+<ul>
+  <li><strong>Sin persistencia</strong>: reiniciar = “Hola mundo”.</li>
+  <li><strong>Sin autenticación</strong>: cualquiera en la red puede cambiar el mensaje.</li>
+  <li><strong>Un solo proceso</strong>: si se ejecutara uvicorn con varios <em>workers</em>, cada uno tendría su propia copia de <code>mensaje</code>.</li>
+  <li><strong>Sin límite de tamaño</strong> del texto.</li>
+</ul>
+<p>Ejercicios para resolverlas en <a href="../guias/extender.html">Extender el proyecto</a>.</p>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

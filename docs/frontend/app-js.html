@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lógica en app.js · ESP32 Mensaje Web</title>
+<meta name="description" content="Cómo el frontend consulta y actualiza el mensaje con fetch">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="frontend/app-js.html">
+<article class="doc">
+<h1>Lógica en <code>app.js</code></h1>
+<p class="lead">35 líneas de JavaScript “vanilla” que leen el mensaje al cargar, lo refrescan cada 2 segundos y envían el nuevo valor al pulsar <em>Guardar</em>.</p>
+
+<h2>Código completo</h2>
+<pre data-title="frontend/app.js"><code class="language-javascript">// El backend corre en el mismo host que sirve el frontend, puerto 8000
+const API = `http://${window.location.hostname}:8000`;
+
+const actual = document.getElementById("actual");
+const form = document.getElementById("form");
+const input = document.getElementById("nuevo");
+const estado = document.getElementById("estado");
+
+async function cargarMensaje() {
+  try {
+    const res = await fetch(`${API}/mensaje`);
+    const data = await res.json();
+    actual.textContent = data.mensaje;
+  } catch (e) {
+    actual.textContent = "Error conectando al backend";
+  }
+}
+
+form.addEventListener("submit", async (e) =&gt; {
+  e.preventDefault();
+  try {
+    const res = await fetch(`${API}/mensaje`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mensaje: input.value }),
+    });
+    const data = await res.json();
+    actual.textContent = data.mensaje;
+    estado.textContent = "Mensaje actualizado ✔";
+    input.value = "";
+    setTimeout(() =&gt; (estado.textContent = ""), 2000);
+  } catch (e) {
+    estado.textContent = "Error al guardar";
+  }
+});
+
+cargarMensaje();
+setInterval(cargarMensaje, 2000); // refresco automático</code></pre>
+
+<h2>La URL del backend</h2>
+<pre><code class="language-javascript">const API = `http://${window.location.hostname}:8000`;</code></pre>
+<p><code>window.location.hostname</code> es el host con el que se abrió la página. Así la misma línea sirve en todos los casos sin editar nada:</p>
+<table>
+  <thead><tr><th>Abres la web en…</th><th><code>API</code> vale…</th></tr></thead>
+  <tbody>
+    <tr><td><code>http://localhost:3000</code></td><td><code>http://localhost:8000</code></td></tr>
+    <tr><td><code>http://192.168.137.1:3000</code> (desde el celular)</td><td><code>http://192.168.137.1:8000</code></td></tr>
+  </tbody>
+</table>
+<p>Se usa una <em>template string</em> (comillas invertidas <code>`…${…}`</code>) para interpolar variables.</p>
+
+<h2>Referencias al DOM</h2>
+<p><code>document.getElementById</code> obtiene una vez los elementos del HTML y se guardan en constantes para no buscarlos en cada actualización.</p>
+
+<h2>Leer el mensaje: cargarMensaje()</h2>
+<ul>
+  <li><code>async</code> / <code>await</code>: <code>fetch</code> devuelve una <em>promesa</em> (la respuesta llega en el futuro). <code>await</code> pausa la función hasta que llegue, sin bloquear la página.</li>
+  <li><code>fetch(url)</code> hace un <code>GET</code> por defecto.</li>
+  <li><code>res.json()</code> lee el cuerpo y lo convierte en objeto: <code>{mensaje: "Hola mundo"}</code>.</li>
+  <li><code>textContent</code> (y no <code>innerHTML</code>) inserta el texto <strong>tal cual</strong>. Si alguien guarda <code>&lt;script&gt;…</code> como mensaje, se muestra como texto y no se ejecuta: protección básica contra XSS.</li>
+  <li><code>try/catch</code>: si el backend está apagado, <code>fetch</code> lanza un error de red y se muestra “Error conectando al backend”.</li>
+</ul>
+
+<h2>Guardar: el evento submit</h2>
+<ol class="steps">
+  <li><strong><code>e.preventDefault()</code></strong> evita el comportamiento por defecto del formulario (recargar la página enviando los datos por URL).</li>
+  <li><strong><code>fetch</code> con <code>method: "PUT"</code></strong>, cabecera <code>Content-Type: application/json</code> y el cuerpo convertido a texto con <code>JSON.stringify</code>. Esta combinación es la que provoca la petición <em>preflight</em> de CORS (<code>OPTIONS</code>) que el backend autoriza.</li>
+  <li><strong>Actualiza la interfaz</strong> con el valor confirmado por el servidor, muestra “Mensaje actualizado ✔” y limpia el campo.</li>
+  <li><strong><code>setTimeout</code></strong> borra el aviso a los 2 s.</li>
+</ol>
+
+<h2>Refresco automático</h2>
+<pre><code class="language-javascript">cargarMensaje();
+setInterval(cargarMensaje, 2000);</code></pre>
+<p>Primero carga inmediatamente y luego cada 2 s. Así, si otra persona (u otra pestaña, o un <code>curl</code>) cambia el mensaje, todas las páginas abiertas lo reflejan. Es el mismo patrón de <em>polling</em> que usa la ESP32.</p>
+
+<h2>Diagrama de interacción</h2>
+<pre class="mermaid">
+sequenceDiagram
+    participant DOM as Página
+    participant JS as app.js
+    participant API as Backend
+    JS->>API: GET /mensaje (al cargar)
+    API-->>JS: {"mensaje": "..."}
+    JS->>DOM: actual.textContent = ...
+    loop setInterval 2000 ms
+        JS->>API: GET /mensaje
+        API-->>JS: {"mensaje": "..."}
+        JS->>DOM: actualiza
+    end
+    DOM->>JS: submit (Guardar)
+    JS->>API: PUT /mensaje
+    API-->>JS: {"mensaje": "nuevo"}
+    JS->>DOM: "Mensaje actualizado ✔"
+</pre>
+
+<h2>Posibles mejoras</h2>
+<ul>
+  <li>Comprobar <code>res.ok</code> antes de <code>res.json()</code> para mostrar errores 422/500 con claridad.</li>
+  <li>No sobrescribir el texto mientras el usuario está escribiendo (ya ocurre bien porque solo se toca <code>#actual</code>, no el input).</li>
+  <li>Pausar el <code>setInterval</code> cuando la pestaña está oculta (<code>document.visibilityState</code>).</li>
+  <li>Sustituir el polling por <em>Server-Sent Events</em>.</li>
+</ul>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

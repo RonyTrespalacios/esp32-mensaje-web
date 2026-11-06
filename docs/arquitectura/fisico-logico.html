@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vista física vs. lógica · ESP32 Mensaje Web</title>
+<meta name="description" content="Qué está conectado con qué, y cómo se comunican las capas de software">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="arquitectura/fisico-logico.html">
+<article class="doc">
+<h1>Vista física vs. vista lógica</h1>
+<p class="lead">Un mismo sistema se puede describir por <strong>cómo está cableado</strong> (física) o por <strong>cómo fluye la información</strong> entre programas (lógica). Confundirlas es la causa de la mayoría de errores de red.</p>
+
+<h2>Vista física</h2>
+<p>Qué objetos existen y por qué medio están unidos.</p>
+<pre class="mermaid">
+flowchart TB
+    subgraph LAPTOP["💻 Computador"]
+        WIFI_AP["Adaptador WiFi&lt;br/&gt;(hotspot / cliente)"]
+        USB["Puerto USB"]
+        CPU["CPU + RAM&lt;br/&gt;Docker"]
+    end
+    subgraph PLACA["📟 Placa ESP32 DevKit"]
+        CHIP["SoC ESP32&lt;br/&gt;radio 2.4 GHz + antena PCB"]
+        BRIDGE["Puente USB-UART&lt;br/&gt;CH340 / CP2102"]
+        REG["Regulador 3.3 V"]
+    end
+    CEL["📱 Celular (opcional)"]
+
+    CHIP -. "ondas de radio 2.4 GHz" .- WIFI_AP
+    CEL -. "ondas de radio" .- WIFI_AP
+    USB == "cable USB: 5 V + datos D+/D−" ==> BRIDGE
+    BRIDGE -- "UART TX/RX" --- CHIP
+    USB == "5 V" ==> REG
+    REG -- "3.3 V" --- CHIP
+</pre>
+<p class="figcaption">Figura 1. El cable USB cumple tres funciones: alimentar, programar y transportar el Monitor Serie. Los datos de la aplicación viajan <strong>por radio</strong>, no por el cable.</p>
+
+<h2>Vista lógica</h2>
+<p>Qué direcciones, puertos y protocolos usan los programas para hablarse.</p>
+<pre class="mermaid">
+flowchart LR
+    subgraph NET["Red IP 192.168.137.0/24 (hotspot Windows)"]
+        HOST["Host&lt;br/&gt;192.168.137.1"]
+        ESPIP["ESP32&lt;br/&gt;192.168.137.x (DHCP)"]
+        CELIP["Celular&lt;br/&gt;192.168.137.y"]
+    end
+    subgraph DOCKER["Red interna Docker (bridge 172.x.x.x)"]
+        NG["nginx :80"]
+        UV["uvicorn :8000"]
+        MEM[("mensaje en memoria")]
+    end
+    HOST -- "publica :3000 → nginx:80" --> NG
+    HOST -- "publica :8000 → uvicorn:8000" --> UV
+    UV <--> MEM
+    ESPIP -- "HTTP GET /mensaje/texto → 192.168.137.1:8000" --> HOST
+    CELIP -- "HTTP → 192.168.137.1:3000 y :8000" --> HOST
+</pre>
+<p class="figcaption">Figura 2. Docker <em>publica</em> los puertos de los contenedores en todas las interfaces del host; desde fuera solo se ve la IP del computador.</p>
+
+<h2>Comparación</h2>
+<table>
+  <thead><tr><th>Aspecto</th><th>Física</th><th>Lógica</th></tr></thead>
+  <tbody>
+    <tr><td>Programación de la ESP32</td><td>Cable USB + chip CH340/CP2102</td><td>Puerto serie <code>COMx</code> / <code>/dev/ttyUSB0</code>, protocolo del bootloader (esptool)</td></tr>
+    <tr><td>Depuración</td><td>El mismo cable USB</td><td>UART0 a 115200 baud → Monitor Serie</td></tr>
+    <tr><td>Datos de la aplicación</td><td>Radio WiFi 2.4 GHz</td><td>IPv4 + TCP + HTTP/1.1 a <code>BACKEND_HOST:8000</code></td></tr>
+    <tr><td>Backend</td><td>CPU/RAM del computador</td><td>Contenedor <code>mensaje-backend</code>, puerto 8000 publicado</td></tr>
+    <tr><td>Frontend</td><td>CPU/RAM del computador</td><td>Contenedor <code>mensaje-frontend</code>, puerto 80 publicado como 3000</td></tr>
+    <tr><td>Alimentación ESP32</td><td>5 V USB → regulador → 3.3 V</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<h2>Capas de red (modelo TCP/IP)</h2>
+<p>Una petición de la ESP32 atraviesa estas capas; cada una resuelve un problema distinto:</p>
+<table>
+  <thead><tr><th>Capa</th><th>En la ESP32</th><th>En el computador</th></tr></thead>
+  <tbody>
+    <tr><td>Aplicación</td><td><code>HTTPClient</code>: <code>GET /mensaje/texto</code></td><td>FastAPI / uvicorn</td></tr>
+    <tr><td>Transporte</td><td>TCP, puerto origen efímero → destino 8000</td><td>Docker reenvía :8000 al contenedor</td></tr>
+    <tr><td>Red</td><td>IPv4 192.168.137.x → 192.168.137.1</td><td>Pila IP de Windows/Linux</td></tr>
+    <tr><td>Enlace / físico</td><td>WiFi 802.11 b/g/n, 2.4 GHz</td><td>Adaptador WiFi en modo AP o cliente</td></tr>
+  </tbody>
+</table>
+
+<div class="callout tip">
+  <span class="callout-title">Para diagnosticar, recorre las capas de abajo hacia arriba</span>
+  <ol>
+    <li>¿Hay enlace? → el Monitor Serie dice <em>Conectado</em>.</li>
+    <li>¿Hay IP en la misma subred? → compara la IP de la ESP32 con <code>BACKEND_HOST</code>.</li>
+    <li>¿El puerto TCP está abierto? → abre <code>http://BACKEND_HOST:8000/mensaje</code> desde el celular.</li>
+    <li>¿La aplicación responde bien? → <code>docker compose logs backend</code>.</li>
+  </ol>
+</div>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

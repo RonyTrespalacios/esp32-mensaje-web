@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glosario · ESP32 Mensaje Web</title>
+<meta name="description" content="Términos técnicos usados en la documentación">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="referencia/glosario.html">
+<article class="doc">
+<h1>Glosario</h1>
+<p class="lead">Términos usados a lo largo de la documentación, en orden alfabético.</p>
+
+<table>
+  <thead><tr><th>Término</th><th>Definición</th></tr></thead>
+  <tbody>
+    <tr><td><strong>API REST</strong></td><td>Interfaz que expone recursos (aquí, <code>/mensaje</code>) manipulables con métodos HTTP estándar (GET, PUT…).</td></tr>
+    <tr><td><strong>ASGI</strong></td><td>Interfaz estándar entre servidores web asíncronos de Python (uvicorn) y frameworks (FastAPI).</td></tr>
+    <tr><td><strong>Baudios (baud)</strong></td><td>Símbolos por segundo en una línea serie. A 115200 baud se transmiten ~11 520 bytes/s.</td></tr>
+    <tr><td><strong>Bootloader</strong></td><td>Programa en ROM del ESP32 que, al arrancar con GPIO0 en bajo, recibe un nuevo firmware por el puerto serie.</td></tr>
+    <tr><td><strong>CH340 / CP2102</strong></td><td>Chips puente USB ↔ UART usados en placas de desarrollo.</td></tr>
+    <tr><td><strong>Contenedor</strong></td><td>Proceso aislado con su propio sistema de archivos, creado a partir de una imagen de Docker.</td></tr>
+    <tr><td><strong>CORS</strong></td><td><em>Cross-Origin Resource Sharing</em>: mecanismo por el que un servidor autoriza a páginas de otro origen a leer sus respuestas.</td></tr>
+    <tr><td><strong>DHCP</strong></td><td>Protocolo que asigna automáticamente IP a los dispositivos que se unen a una red.</td></tr>
+    <tr><td><strong>Docker Compose</strong></td><td>Herramienta para definir y ejecutar varios contenedores con un archivo YAML.</td></tr>
+    <tr><td><strong>Endpoint</strong></td><td>Combinación de método + ruta que atiende la API, p. ej. <code>GET /mensaje/texto</code>.</td></tr>
+    <tr><td><strong>esptool</strong></td><td>Herramienta de Espressif que escribe firmware en la flash del ESP32.</td></tr>
+    <tr><td><strong>Firmware</strong></td><td>Programa que se ejecuta en el microcontrolador (el sketch compilado).</td></tr>
+    <tr><td><strong>Flash</strong></td><td>Memoria no volátil donde se guarda el firmware.</td></tr>
+    <tr><td><strong>GPIO</strong></td><td><em>General Purpose Input/Output</em>: pin digital configurable como entrada o salida.</td></tr>
+    <tr><td><strong>Hotspot</strong></td><td>Punto de acceso WiFi creado por un computador o celular.</td></tr>
+    <tr><td><strong>Idempotente</strong></td><td>Operación que produce el mismo resultado se ejecute una o varias veces (como <code>PUT</code>).</td></tr>
+    <tr><td><strong>Imagen (Docker)</strong></td><td>Plantilla inmutable con sistema de archivos y metadatos para crear contenedores.</td></tr>
+    <tr><td><strong>JSON</strong></td><td>Formato de texto para datos estructurados: <code>{"mensaje":"Hola"}</code>.</td></tr>
+    <tr><td><strong>localhost</strong></td><td>Nombre que apunta al propio dispositivo (<code>127.0.0.1</code>).</td></tr>
+    <tr><td><strong>Middleware</strong></td><td>Código que se ejecuta antes/después de cada petición (p. ej. CORS).</td></tr>
+    <tr><td><strong>Monitor Serie</strong></td><td>Ventana de Arduino IDE que muestra lo que la placa envía con <code>Serial.print</code>.</td></tr>
+    <tr><td><strong>MQTT</strong></td><td>Protocolo ligero de publicación/suscripción muy usado en IoT.</td></tr>
+    <tr><td><strong>nginx</strong></td><td>Servidor web que aquí entrega los archivos del frontend.</td></tr>
+    <tr><td><strong>Origen</strong></td><td>Combinación de esquema + host + puerto (<code>http://localhost:3000</code>).</td></tr>
+    <tr><td><strong>Polling</strong></td><td>Consultar periódicamente si algo cambió, en lugar de recibir avisos.</td></tr>
+    <tr><td><strong>Puerto (TCP)</strong></td><td>Número (0–65535) que identifica un servicio dentro de una IP: 8000 backend, 3000 frontend.</td></tr>
+    <tr><td><strong>Pydantic</strong></td><td>Librería de validación de datos basada en anotaciones de tipo de Python.</td></tr>
+    <tr><td><strong>Sketch</strong></td><td>Programa de Arduino (<code>.ino</code> + archivos de su carpeta).</td></tr>
+    <tr><td><strong>SoC</strong></td><td><em>System on Chip</em>: CPU, memoria y periféricos en un solo chip.</td></tr>
+    <tr><td><strong>SSID</strong></td><td>Nombre de una red WiFi.</td></tr>
+    <tr><td><strong>Subred</strong></td><td>Conjunto de IPs que se comunican directamente, p. ej. <code>192.168.137.0/24</code>.</td></tr>
+    <tr><td><strong>UART</strong></td><td>Periférico de comunicación serie asíncrona (TX/RX).</td></tr>
+    <tr><td><strong>uvicorn</strong></td><td>Servidor ASGI que ejecuta la aplicación FastAPI.</td></tr>
+    <tr><td><strong>Volumen / bind mount</strong></td><td>Carpeta del host visible dentro de un contenedor.</td></tr>
+    <tr><td><strong>WSL 2</strong></td><td>Subsistema de Windows para Linux; Docker Desktop lo usa para ejecutar contenedores.</td></tr>
+  </tbody>
+</table>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

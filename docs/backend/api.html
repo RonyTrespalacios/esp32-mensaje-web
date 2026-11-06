@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Referencia de la API · ESP32 Mensaje Web</title>
+<meta name="description" content="Endpoints, formatos, códigos de estado y ejemplos">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="backend/api.html">
+<article class="doc">
+<h1>Referencia de la API</h1>
+<p class="lead">Base URL: <code>http://&lt;host&gt;:8000</code>. Sin autenticación. Codificación UTF-8.</p>
+
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Usado por</th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge get">GET</span></td><td><code>/mensaje</code></td><td>Mensaje actual en JSON</td><td>Frontend</td></tr>
+    <tr><td><span class="badge get">GET</span></td><td><code>/mensaje/texto</code></td><td>Mensaje actual en texto plano</td><td>ESP32</td></tr>
+    <tr><td><span class="badge put">PUT</span></td><td><code>/mensaje</code></td><td>Reemplazar el mensaje</td><td>Frontend, scripts</td></tr>
+    <tr><td><span class="badge get">GET</span></td><td><code>/docs</code></td><td>Swagger UI interactivo</td><td>Personas</td></tr>
+    <tr><td><span class="badge get">GET</span></td><td><code>/redoc</code></td><td>Documentación ReDoc</td><td>Personas</td></tr>
+    <tr><td><span class="badge get">GET</span></td><td><code>/openapi.json</code></td><td>Especificación OpenAPI 3</td><td>Herramientas</td></tr>
+  </tbody>
+</table>
+
+<h2>GET /mensaje</h2>
+<p>Devuelve el mensaje actual envuelto en un objeto JSON.</p>
+<h4>Respuesta 200</h4>
+<pre><code class="language-http">HTTP/1.1 200 OK
+content-type: application/json
+
+{"mensaje":"Hola mundo"}</code></pre>
+<h4>Ejemplos</h4>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<pre><code class="language-powershell">Invoke-RestMethod http://localhost:8000/mensaje</code></pre>
+  </div>
+  <div class="tab" data-label="Linux">
+<pre><code class="language-bash">curl http://localhost:8000/mensaje</code></pre>
+  </div>
+</div>
+
+<h2>GET /mensaje/texto</h2>
+<p>Devuelve <strong>solo</strong> el texto, sin comillas ni JSON. Pensado para microcontroladores.</p>
+<h4>Respuesta 200</h4>
+<pre><code class="language-http">HTTP/1.1 200 OK
+content-type: text/plain; charset=utf-8
+
+Hola mundo</code></pre>
+<h4>Ejemplos</h4>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<pre><code class="language-powershell">(Invoke-WebRequest http://localhost:8000/mensaje/texto).Content</code></pre>
+  </div>
+  <div class="tab" data-label="Linux">
+<pre><code class="language-bash">curl http://localhost:8000/mensaje/texto</code></pre>
+  </div>
+</div>
+<p>En la ESP32:</p>
+<pre><code class="language-cpp">HTTPClient http;
+http.begin("http://192.168.137.1:8000/mensaje/texto");
+if (http.GET() == 200) {
+  String m = http.getString();   // "Hola mundo"
+}
+http.end();</code></pre>
+
+<h2>PUT /mensaje</h2>
+<p>Reemplaza el mensaje por el enviado. Operación idempotente.</p>
+<h4>Cuerpo de la petición</h4>
+<table>
+  <thead><tr><th>Campo</th><th>Tipo</th><th>Obligatorio</th><th>Descripción</th></tr></thead>
+  <tbody><tr><td><code>mensaje</code></td><td>string</td><td>Sí</td><td>Nuevo texto.</td></tr></tbody>
+</table>
+<pre><code class="language-http">PUT /mensaje HTTP/1.1
+Content-Type: application/json
+
+{"mensaje":"Encender LED"}</code></pre>
+<h4>Respuesta 200</h4>
+<pre><code class="language-json">{"mensaje":"Encender LED"}</code></pre>
+<h4>Respuesta 422 (validación)</h4>
+<p>Si falta el campo o no es un texto:</p>
+<pre><code class="language-json">{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": ["body", "mensaje"],
+      "msg": "Field required",
+      "input": {}
+    }
+  ]
+}</code></pre>
+<h4>Ejemplos</h4>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<pre><code class="language-powershell">Invoke-RestMethod -Method Put -Uri http://localhost:8000/mensaje `
+  -ContentType "application/json" -Body '{"mensaje":"Encender LED"}'</code></pre>
+  </div>
+  <div class="tab" data-label="Linux">
+<pre><code class="language-bash">curl -X PUT http://localhost:8000/mensaje \
+  -H "Content-Type: application/json" \
+  -d '{"mensaje":"Encender LED"}'</code></pre>
+  </div>
+</div>
+<p>Desde JavaScript (así lo hace el frontend):</p>
+<pre><code class="language-javascript">await fetch("http://localhost:8000/mensaje", {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ mensaje: "Encender LED" }),
+});</code></pre>
+
+<h2>Códigos de estado</h2>
+<table>
+  <thead><tr><th>Código</th><th>Cuándo</th></tr></thead>
+  <tbody>
+    <tr><td><code>200 OK</code></td><td>Petición correcta.</td></tr>
+    <tr><td><code>404 Not Found</code></td><td>Ruta inexistente (p. ej. <code>/mensajes</code>).</td></tr>
+    <tr><td><code>405 Method Not Allowed</code></td><td>Método no soportado en la ruta (p. ej. <code>POST /mensaje</code> o <code>PUT /mensaje/texto</code>).</td></tr>
+    <tr><td><code>422 Unprocessable Entity</code></td><td>Cuerpo del <code>PUT</code> inválido.</td></tr>
+    <tr><td><code>-1</code> (en la ESP32)</td><td>No es HTTP: <code>HTTPClient</code> no pudo conectar (IP/puerto/firewall).</td></tr>
+  </tbody>
+</table>
+
+<h2>Swagger UI</h2>
+<p>Abre <a href="http://localhost:8000/docs">http://localhost:8000/docs</a>: cada endpoint tiene un botón <em>Try it out</em> para enviar peticiones reales desde el navegador y ver la respuesta, el código y el comando <code>curl</code> equivalente.</p>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

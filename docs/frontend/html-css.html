@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estructura HTML y CSS · ESP32 Mensaje Web</title>
+<meta name="description" content="index.html y styles.css del frontend explicados">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="frontend/html-css.html">
+<article class="doc">
+<h1>Estructura HTML y CSS</h1>
+<p class="lead">El frontend son tres archivos estáticos, sin frameworks ni paso de compilación. nginx los entrega tal cual al navegador.</p>
+
+<h2>Cómo se sirve</h2>
+<pre class="mermaid">
+flowchart LR
+    B["Navegador"] -- "GET http://host:3000/" --> N["nginx (contenedor)"]
+    N -- "lee" --> V["/usr/share/nginx/html&lt;br/&gt;= ./frontend del repo"]
+    N -- "index.html, styles.css, app.js" --> B
+    B -- "ejecuta app.js → fetch :8000" --> API["Backend"]
+</pre>
+<p>nginx no ejecuta nada del frontend: solo envía archivos. Toda la lógica corre <strong>en el navegador</strong> del usuario.</p>
+
+<h2>index.html</h2>
+<pre data-title="frontend/index.html"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="es"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+  &lt;title&gt;Editor de mensaje&lt;/title&gt;
+  &lt;link rel="stylesheet" href="styles.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;main class="card"&gt;
+    &lt;h1&gt;Mensaje para la ESP32&lt;/h1&gt;
+    &lt;p class="label"&gt;Mensaje actual:&lt;/p&gt;
+    &lt;p id="actual" class="actual"&gt;Cargando...&lt;/p&gt;
+
+    &lt;form id="form"&gt;
+      &lt;input id="nuevo" type="text" placeholder="Escribe un nuevo mensaje" required&gt;
+      &lt;button type="submit"&gt;Guardar&lt;/button&gt;
+    &lt;/form&gt;
+    &lt;p id="estado" class="estado"&gt;&lt;/p&gt;
+  &lt;/main&gt;
+  &lt;script src="app.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+<h3>Puntos clave</h3>
+<table>
+  <thead><tr><th>Elemento</th><th>Propósito</th></tr></thead>
+  <tbody>
+    <tr><td><code>&lt;meta charset="UTF-8"&gt;</code></td><td>Que tildes y emojis del mensaje se muestren bien.</td></tr>
+    <tr><td><code>&lt;meta name="viewport"&gt;</code></td><td>Que la página se adapte al ancho del celular en lugar de mostrarse “de escritorio” en miniatura.</td></tr>
+    <tr><td><code>id="actual"</code></td><td>Párrafo donde <code>app.js</code> escribe el mensaje actual.</td></tr>
+    <tr><td><code>&lt;form id="form"&gt;</code></td><td>Usar un formulario permite enviar con <kbd>Enter</kbd> además del botón.</td></tr>
+    <tr><td><code>required</code></td><td>El navegador impide enviar el campo vacío sin escribir JavaScript.</td></tr>
+    <tr><td><code>id="estado"</code></td><td>Mensajes de feedback (“Mensaje actualizado ✔” o error).</td></tr>
+    <tr><td><code>&lt;script src="app.js"&gt;</code> al final</td><td>Se carga después de que existen los elementos, así <code>getElementById</code> los encuentra.</td></tr>
+  </tbody>
+</table>
+
+<h2>styles.css</h2>
+<p>Una hoja de estilos corta que centra una “tarjeta” blanca sobre fondo oscuro.</p>
+<pre data-title="frontend/styles.css (extracto)"><code class="language-css">* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, sans-serif;
+  background: #1e293b;
+  padding: 16px;
+}
+.card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.3);
+}
+.actual { font-size: 1.5rem; font-weight: bold; word-break: break-word; }
+form { display: flex; gap: .5rem; flex-wrap: wrap; }
+input { flex: 1; min-width: 0; }
+.estado { color: #16a34a; min-height: 1.2em; }</code></pre>
+
+<h3>Técnicas usadas</h3>
+<ul>
+  <li><strong><code>box-sizing: border-box</code></strong>: el <code>padding</code> y el borde se incluyen en el ancho declarado; evita desbordes.</li>
+  <li><strong>Flexbox en <code>body</code></strong> (<code>display:flex</code> + <code>align-items</code> + <code>justify-content</code>) con <code>min-height:100vh</code>: centra la tarjeta vertical y horizontalmente.</li>
+  <li><strong><code>width:100%; max-width:480px</code></strong>: ocupa todo el ancho en el celular, pero no más de 480 px en pantallas grandes.</li>
+  <li><strong>Flexbox en el formulario</strong> con <code>flex:1</code> en el input: el campo crece y el botón mantiene su tamaño; <code>flex-wrap</code> permite que bajen de línea en pantallas muy estrechas.</li>
+  <li><strong><code>word-break: break-word</code></strong>: un mensaje largo sin espacios no rompe el diseño.</li>
+  <li><strong><code>min-height: 1.2em</code></strong> en <code>.estado</code>: reserva el espacio para que la tarjeta no “salte” cuando aparece el texto de confirmación.</li>
+</ul>
+
+<div class="callout tip">
+  <span class="callout-title">Experimenta</span>
+  <p>Como <code>frontend/</code> está montado como volumen, puedes cambiar colores en <code>styles.css</code>, guardar y pulsar <kbd>Ctrl</kbd>+<kbd>F5</kbd> en el navegador para verlo al instante.</p>
+</div>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

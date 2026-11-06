@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Programar la ESP32 · ESP32 Mensaje Web</title>
+<meta name="description" content="Compilar, cargar el sketch y leer el Monitor Serie">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="inicio/programar-esp32.html">
+<article class="doc">
+<h1>7. Programar la ESP32</h1>
+<p class="lead">Compilarás el sketch, lo cargarás en la placa y leerás lo que imprime por el Monitor Serie.</p>
+
+<h2>Abrir el sketch</h2>
+<ol class="steps">
+  <li><strong>File → Open…</strong> y selecciona <code>esp32/esp32_mensaje/esp32_mensaje.ino</code>.</li>
+  <li><strong>Revisa las pestañas.</strong> Arduino IDE abre todos los archivos de la carpeta del sketch: verás <code>esp32_mensaje.ino</code>, <code>config.example.h</code> y <code>config.h</code>. Si <code>config.h</code> no aparece, vuelve al <a href="configurar-red.html#crear-configh">paso 6</a>.</li>
+</ol>
+
+<div class="callout">
+  <span class="callout-title">Regla de Arduino</span>
+  <p>El archivo <code>.ino</code> debe estar dentro de una carpeta con <strong>el mismo nombre</strong> (<code>esp32_mensaje/esp32_mensaje.ino</code>). Por eso no conviene renombrar uno sin el otro.</p>
+</div>
+
+<h2>Compilar (Verify)</h2>
+<p>Pulsa el botón ✓ <strong>Verify</strong> (<kbd>Ctrl</kbd>+<kbd>R</kbd>). La primera compilación tarda 1–3 minutos porque compila el núcleo completo del ESP32. Al final verás algo como:</p>
+<pre><code class="language-plaintext">Sketch uses 912345 bytes (69%) of program storage space. Maximum is 1310720 bytes.
+Global variables use 44768 bytes (13%) of dynamic memory, leaving 282912 bytes for local variables.</code></pre>
+
+<h2>Cargar (Upload)</h2>
+<ol class="steps">
+  <li><strong>Verifica placa y puerto</strong> en la barra superior: <em>ESP32 Dev Module</em> en <code>COMx</code> o <code>/dev/ttyUSB0</code>.</li>
+  <li><strong>Pulsa → Upload</strong> (<kbd>Ctrl</kbd>+<kbd>U</kbd>).</li>
+  <li><strong>Observa la consola.</strong> Aparecerá <code>Connecting....</code> y luego <code>Writing at 0x00010000... (10 %)</code> hasta <code>Hard resetting via RTS pin...</code>.</li>
+</ol>
+
+<div class="callout warning">
+  <span class="callout-title">Se queda en “Connecting.....”</span>
+  <p>Algunas placas no entran solas en modo de programación. Mantén presionado el botón <strong>BOOT</strong> (o <em>IO0</em>) cuando veas <code>Connecting...</code> y suéltalo al empezar <code>Writing at…</code>. Si persiste, baja <em>Tools → Upload Speed</em> a <code>115200</code>.</p>
+</div>
+
+<h3>¿Qué hace la carga por dentro?</h3>
+<pre class="mermaid">
+flowchart LR
+    A["esp32_mensaje.ino&lt;br/&gt;+ config.h"] -->|xtensa-esp32-elf-gcc| B["esp32_mensaje.ino.bin"]
+    B -->|esptool por USB-Serial| C["Chip CH340 / CP2102"]
+    C -->|UART0 TX/RX| D["Bootloader ROM del ESP32"]
+    D -->|escribe| E["Memoria flash 4 MB"]
+    E -->|reset| F["Tu programa corre"]
+</pre>
+
+<h2>Monitor Serie</h2>
+<ol class="steps">
+  <li><strong>Ábrelo:</strong> <em>Tools → Serial Monitor</em> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>).</li>
+  <li><strong>Velocidad: 115200 baud</strong> (selector en la esquina derecha). Debe coincidir con <code>Serial.begin(115200)</code>.</li>
+  <li><strong>Pulsa EN / RST</strong> en la placa para reiniciarla y ver el arranque desde el principio.</li>
+</ol>
+<p>Salida esperada:</p>
+<pre data-title="Monitor Serie (115200)"><code class="language-plaintext">Conectando a WiFi.......
+Conectado. IP ESP32: 192.168.137.23
+Consultando: http://192.168.137.1:8000/mensaje/texto
+Nuevo mensaje: Hola mundo</code></pre>
+
+<table>
+  <thead><tr><th>Si ves…</th><th>Significa</th><th>Revisa</th></tr></thead>
+  <tbody>
+    <tr><td>Caracteres raros <code>�x�</code></td><td>Velocidad del monitor incorrecta.</td><td>Pon 115200 baud.</td></tr>
+    <tr><td>Puntos infinitos <code>.......</code></td><td>No conecta al WiFi.</td><td>SSID/clave en <code>config.h</code>; que la red sea 2.4 GHz.</td></tr>
+    <tr><td><code>Error HTTP: -1</code></td><td>Conectó al WiFi pero no llega al backend.</td><td><code>BACKEND_HOST</code>, Docker corriendo, firewall.</td></tr>
+    <tr><td><code>Error HTTP: 404</code></td><td>Llega a un servidor pero la ruta no existe.</td><td>El puerto/servicio; la URL termina en <code>/mensaje/texto</code>.</td></tr>
+  </tbody>
+</table>
+<p>Más casos en <a href="../referencia/problemas.html">Solución de problemas</a>.</p>
+
+<p>Continúa con <a href="primera-prueba.html">8. Prueba de extremo a extremo</a>.</p>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

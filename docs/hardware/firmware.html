@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firmware · ESP32 Mensaje Web</title>
+<meta name="description" content="esp32_mensaje.ino y config.h explicados línea por línea">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="hardware/firmware.html">
+<article class="doc">
+<h1>Firmware (<code>esp32_mensaje.ino</code>)</h1>
+<p class="lead">El sketch se conecta al WiFi, consulta el backend cada segundo y solo imprime cuando el mensaje cambia.</p>
+
+<h2>Archivos del sketch</h2>
+<table>
+  <thead><tr><th>Archivo</th><th>En Git</th><th>Contenido</th></tr></thead>
+  <tbody>
+    <tr><td><code>esp32_mensaje.ino</code></td><td>✅</td><td>Programa principal.</td></tr>
+    <tr><td><code>config.example.h</code></td><td>✅</td><td>Plantilla con valores de ejemplo.</td></tr>
+    <tr><td><code>config.h</code></td><td>⛔ (<code>.gitignore</code>)</td><td>Tu SSID, contraseña e IP reales.</td></tr>
+  </tbody>
+</table>
+
+<h2>config.example.h</h2>
+<pre data-title="esp32/esp32_mensaje/config.example.h"><code class="language-cpp">#pragma once
+
+// Red WiFi a la que se conectara la ESP32 (solo 2.4 GHz)
+#define WIFI_SSID     "NOMBRE_DE_TU_RED"
+#define WIFI_PASSWORD "CLAVE_DE_TU_RED"
+
+// IP del equipo donde corre Docker (backend). Ver README > "Que cambiar"
+// Ejemplo hotspot de Windows: 192.168.137.1
+#define BACKEND_HOST  "192.168.137.1"
+#define BACKEND_PORT  8000</code></pre>
+<ul>
+  <li><code>#pragma once</code>: evita que el archivo se incluya dos veces.</li>
+  <li><code>#define</code>: macros del preprocesador. Antes de compilar, cada aparición de <code>WIFI_SSID</code> se sustituye literalmente por <code>"NOMBRE_DE_TU_RED"</code>.</li>
+  <li><code>BACKEND_PORT</code> es un número (sin comillas) y <code>BACKEND_HOST</code> un texto (con comillas).</li>
+</ul>
+
+<h2>Código completo</h2>
+<pre data-title="esp32/esp32_mensaje/esp32_mensaje.ino"><code class="language-cpp">#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+
+// Credenciales WiFi e IP del backend (NO se sube a GitHub).
+// Si no existe, copia "config.example.h" como "config.h" y editalo.
+#include "config.h"
+
+const char* ssid     = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
+
+// Endpoint de texto plano del backend
+String url = String("http://") + BACKEND_HOST + ":" + BACKEND_PORT + "/mensaje/texto";
+
+String ultimoMensaje = "";
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando a WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("Conectado. IP ESP32: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("Consultando: ");
+  Serial.println(url);
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(url);
+    int code = http.GET();
+    if (code == 200) {
+      String mensaje = http.getString();
+      if (mensaje != ultimoMensaje) {
+        Serial.print("Nuevo mensaje: ");
+        Serial.println(mensaje);
+        ultimoMensaje = mensaje;
+      }
+    } else {
+      Serial.printf("Error HTTP: %d\n", code);
+    }
+    http.end();
+  } else {
+    Serial.println("WiFi desconectado, reconectando...");
+    WiFi.reconnect();
+  }
+  delay(1000);
+}</code></pre>
+
+<h2>Explicación</h2>
+
+<h3>Includes</h3>
+<ul>
+  <li><code>&lt;WiFi.h&gt;</code>: control del WiFi del ESP32 (objeto global <code>WiFi</code>).</li>
+  <li><code>&lt;HTTPClient.h&gt;</code>: cliente HTTP de alto nivel sobre TCP.</li>
+  <li><code>"config.h"</code>: con comillas, se busca primero en la carpeta del sketch. Si no existe, la compilación falla con <code>config.h: No such file or directory</code>.</li>
+</ul>
+
+<h3>Variables globales</h3>
+<pre><code class="language-cpp">String url = String("http://") + BACKEND_HOST + ":" + BACKEND_PORT + "/mensaje/texto";
+String ultimoMensaje = "";</code></pre>
+<p>La URL se arma una vez al arrancar concatenando objetos <code>String</code> de Arduino (que aceptan sumar números). Con los valores de ejemplo resulta <code>http://192.168.137.1:8000/mensaje/texto</code>. <code>ultimoMensaje</code> recuerda el último valor impreso.</p>
+
+<h3>setup(): una sola vez al arrancar</h3>
+<ol class="steps">
+  <li><strong><code>Serial.begin(115200)</code></strong>: abre UART0 a 115200 baudios. El Monitor Serie debe usar la misma velocidad.</li>
+  <li><strong><code>WiFi.begin(ssid, password)</code></strong>: inicia la conexión en modo estación. Es <em>asíncrono</em>: retorna de inmediato.</li>
+  <li><strong>Bucle <code>while</code></strong>: comprueba <code>WiFi.status()</code> cada 500 ms imprimiendo un punto, hasta obtener <code>WL_CONNECTED</code> (asociado a la red y con IP por DHCP). Si las credenciales son incorrectas, se queda aquí para siempre.</li>
+  <li><strong>Imprime la IP</strong> asignada (<code>WiFi.localIP()</code>) y la URL que va a consultar: datos clave para depurar.</li>
+</ol>
+
+<h3>loop(): se repite indefinidamente</h3>
+<ol class="steps">
+  <li><strong>¿Sigue conectado?</strong> Si no, imprime un aviso y llama a <code>WiFi.reconnect()</code>.</li>
+  <li><strong><code>HTTPClient http; http.begin(url);</code></strong> prepara la petición (aún no se conecta).</li>
+  <li><strong><code>http.GET()</code></strong> abre TCP, envía <code>GET /mensaje/texto HTTP/1.1</code> y espera la respuesta. Devuelve el código HTTP (200, 404…) o un número <strong>negativo</strong> si falló la conexión (<code>-1</code> = connection refused / host inalcanzable; <code>-11</code> = timeout).</li>
+  <li><strong>Si es 200</strong>, <code>http.getString()</code> lee el cuerpo. Solo si difiere de <code>ultimoMensaje</code> lo imprime y lo guarda; así el Monitor no se llena con la misma línea cada segundo.</li>
+  <li><strong><code>http.end()</code></strong> cierra la conexión y libera memoria. <strong>Imprescindible</strong>.</li>
+  <li><strong><code>delay(1000)</code></strong> espera 1 s antes de la siguiente consulta.</li>
+</ol>
+
+<h2>Diagrama de flujo</h2>
+<pre class="mermaid">
+flowchart TD
+    S([Inicio]) --> A["Serial.begin(115200)"]
+    A --> B["WiFi.begin(ssid, password)"]
+    B --> C{"WiFi.status() == WL_CONNECTED?"}
+    C -- No --> D["delay(500), imprime '.'"] --> C
+    C -- Sí --> E["Imprime IP y URL"]
+    E --> L{"¿WiFi conectado?"}
+    L -- No --> R["WiFi.reconnect()"] --> W
+    L -- Sí --> G["http.GET(url)"]
+    G --> H{"code == 200?"}
+    H -- No --> X["Imprime Error HTTP: code"] --> Z
+    H -- Sí --> I["mensaje = http.getString()"]
+    I --> J{"mensaje != ultimoMensaje?"}
+    J -- Sí --> K["Imprime 'Nuevo mensaje' y actualiza ultimoMensaje"] --> Z
+    J -- No --> Z["http.end()"]
+    Z --> W["delay(1000)"] --> L
+</pre>
+
+<h2>Uso de recursos</h2>
+<table>
+  <thead><tr><th>Recurso</th><th>Aproximado</th></tr></thead>
+  <tbody>
+    <tr><td>Flash (programa)</td><td>~900 KB de 1.3 MB (la pila WiFi + TCP/IP + HTTP es lo que más ocupa)</td></tr>
+    <tr><td>RAM estática</td><td>~45 KB de 320 KB</td></tr>
+    <tr><td>Consumo</td><td>~100–150 mA promedio con WiFi activo</td></tr>
+  </tbody>
+</table>
+
+<h2>Detalles y buenas prácticas</h2>
+<ul>
+  <li><strong><code>delay()</code> bloquea</strong>: durante ese segundo la ESP32 no hace nada más. Si añades botones o sensores, usa <code>millis()</code> para temporizar sin bloquear (ver <a href="../guias/extender.html#temporizar-sin-delay">guía</a>).</li>
+  <li><strong><code>String</code> y memoria</strong>: concatenar <code>String</code> repetidamente fragmenta el heap. Aquí es aceptable porque los textos son cortos y se liberan en cada vuelta.</li>
+  <li><strong>Mensajes con tildes</strong>: viajan en UTF-8 y el Monitor Serie de Arduino IDE 2 los muestra bien.</li>
+  <li><strong>Sin timeout explícito</strong>: si el servidor no responde, <code>GET()</code> espera el timeout por defecto (~5 s). Se puede ajustar con <code>http.setTimeout(2000)</code>.</li>
+</ul>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

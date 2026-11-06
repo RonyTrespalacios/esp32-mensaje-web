@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workspace en Windows · ESP32 Mensaje Web</title>
+<meta name="description" content="Instalar Git, WSL 2, Docker Desktop y herramientas en Windows">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="inicio/workspace-windows.html">
+<article class="doc">
+<h1>2. Workspace en Windows</h1>
+<p class="lead">Prepararás un Windows 10/11 recién instalado con todo lo necesario: gestor de paquetes, Git, WSL 2, Docker Desktop y (opcional) VS Code.</p>
+
+<div class="callout">
+  <span class="callout-title">¿Usas Linux?</span>
+  <p>Salta a <a href="workspace-linux.html">3. Workspace en Linux</a>.</p>
+</div>
+
+<h2>Abrir PowerShell</h2>
+<p>Todos los comandos de esta página se ejecutan en <strong>PowerShell</strong>: botón Inicio → escribe <em>PowerShell</em> → Enter. Cuando se indique <strong>como administrador</strong>, haz clic derecho → <em>Ejecutar como administrador</em>.</p>
+
+<h2>Verificar winget</h2>
+<p><code>winget</code> es el gestor de paquetes oficial de Windows. Viene incluido en Windows 11 y en Windows 10 actualizado.</p>
+<pre><code class="language-powershell">winget --version</code></pre>
+<p>Si el comando no existe, instala <strong>“Instalador de aplicación” (App Installer)</strong> desde Microsoft Store y vuelve a abrir PowerShell.</p>
+
+<h2>Instalar Git</h2>
+<pre><code class="language-powershell">winget install --id Git.Git -e</code></pre>
+<p>Alternativa manual: <a href="https://git-scm.com/download/win">git-scm.com/download/win</a> (acepta las opciones por defecto). <strong>Cierra y vuelve a abrir PowerShell</strong> para que se actualice el <code>PATH</code>, y verifica:</p>
+<pre><code class="language-powershell">git --version</code></pre>
+
+<h3>Configurar tu identidad</h3>
+<p>Git firma cada commit con un nombre y un correo. Configúralo una sola vez:</p>
+<pre><code class="language-powershell">git config --global user.name "Tu Nombre"
+git config --global user.email "tu.correo@unillanos.edu.co"</code></pre>
+
+<h2>Instalar WSL 2</h2>
+<p>Docker Desktop en Windows ejecuta los contenedores Linux dentro de <strong>WSL 2</strong> (Windows Subsystem for Linux). En PowerShell <strong>como administrador</strong>:</p>
+<pre><code class="language-powershell">wsl --install</code></pre>
+<p><strong>Reinicia el equipo</strong> cuando termine. Si ya estaba instalado, actualízalo con <code>wsl --update</code>.</p>
+
+<div class="callout warning">
+  <span class="callout-title">Virtualización</span>
+  <p>WSL 2 y Docker necesitan la virtualización por hardware activa. Compruébalo en <em>Administrador de tareas → Rendimiento → CPU → Virtualización: Habilitado</em>. Si dice <em>Deshabilitado</em>, actívala en la BIOS/UEFI (Intel VT-x, AMD-V o “SVM Mode”).</p>
+</div>
+
+<h2>Instalar Docker Desktop</h2>
+<pre><code class="language-powershell">winget install --id Docker.DockerDesktop -e</code></pre>
+<p>Alternativa: <a href="https://www.docker.com/products/docker-desktop/">docker.com/products/docker-desktop</a>.</p>
+<ol class="steps">
+  <li><strong>Abre Docker Desktop</strong> desde el menú Inicio.</li>
+  <li><strong>Acepta los términos.</strong> Puedes omitir el inicio de sesión (<em>Skip</em>).</li>
+  <li><strong>Espera a que el motor arranque.</strong> El indicador inferior debe decir <em>Engine running</em>.</li>
+</ol>
+<p>Verifica desde PowerShell:</p>
+<pre><code class="language-powershell">docker --version
+docker compose version
+docker run --rm hello-world</code></pre>
+<p>El último comando descarga una imagen de prueba y debe imprimir <em>Hello from Docker!</em>.</p>
+
+<div class="callout tip">
+  <span class="callout-title">Docker al iniciar Windows</span>
+  <p>Los comandos <code>docker</code> solo funcionan con Docker Desktop abierto. En <em>Settings → General</em> puedes activar <em>Start Docker Desktop when you sign in</em>.</p>
+</div>
+
+<h2>(Opcional) Instalar VS Code</h2>
+<pre><code class="language-powershell">winget install --id Microsoft.VisualStudioCode -e</code></pre>
+<p>Extensiones útiles: <em>Python</em>, <em>Docker</em> y <em>C/C++</em> (para leer el sketch con resaltado; la carga a la placa se hace con Arduino IDE).</p>
+
+<h2>Crear la carpeta de trabajo</h2>
+<p>Usa una ruta <strong>sin espacios ni tildes</strong> para evitar problemas con las herramientas de compilación:</p>
+<pre><code class="language-powershell">mkdir $HOME\workspace
+cd $HOME\workspace</code></pre>
+
+<h2>Lista de verificación</h2>
+<table>
+  <thead><tr><th>Comando</th><th>Resultado esperado</th></tr></thead>
+  <tbody>
+    <tr><td><code>git --version</code></td><td><code>git version 2.x</code></td></tr>
+    <tr><td><code>wsl --status</code></td><td>Versión predeterminada: 2</td></tr>
+    <tr><td><code>docker compose version</code></td><td><code>Docker Compose version v2.x</code></td></tr>
+    <tr><td><code>docker run --rm hello-world</code></td><td><em>Hello from Docker!</em></td></tr>
+  </tbody>
+</table>
+<p>Continúa con <a href="clonar-y-levantar.html">4. Clonar y levantar servicios</a>.</p>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

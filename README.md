@@ -6,6 +6,9 @@ Ejemplo de **Máquinas Digitales (Unillanos 2026-2)**: una página web permite e
 Navegador ──PUT /mensaje──▶ Backend (FastAPI, Docker) ◀──GET /mensaje/texto── ESP32
 ```
 
+📘 **Documentación completa (Getting Started, arquitectura, código explicado):** <https://ronytrespalacios.github.io/esp32-mensaje-web/>  
+(fuente en [`docs/`](docs/), publicada con GitHub Pages)
+
 ---
 
 ## Contenido
@@ -35,11 +38,12 @@ Navegador ──PUT /mensaje──▶ Backend (FastAPI, Docker) ◀──GET /me
 │   ├── index.html              # Formulario para editar el mensaje
 │   ├── app.js                  # Llama a la API en http://<host>:8000
 │   └── styles.css
-└── esp32/
-    └── esp32_mensaje/
-        ├── esp32_mensaje.ino   # Sketch de Arduino
-        ├── config.example.h    # Plantilla de configuración (SÍ se sube)
-        └── config.h            # Tu WiFi e IP reales (NO se sube, .gitignore)
+├── esp32/
+│   └── esp32_mensaje/
+│       ├── esp32_mensaje.ino   # Sketch de Arduino
+│       ├── config.example.h    # Plantilla de configuración (SÍ se sube)
+│       └── config.h            # Tu WiFi e IP reales (NO se sube, .gitignore)
+└── docs/                       # Sitio de documentación (GitHub Pages)
 ```
 
 > 🔒 **Las credenciales WiFi nunca se suben al repositorio.** Viven en `esp32/esp32_mensaje/config.h`, que está en `.gitignore`. En el repo solo está la plantilla `config.example.h`.

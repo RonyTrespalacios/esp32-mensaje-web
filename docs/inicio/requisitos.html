@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Requisitos · ESP32 Mensaje Web</title>
+<meta name="description" content="Hardware y software necesarios">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="inicio/requisitos.html">
+<article class="doc">
+<h1>1. Requisitos</h1>
+<p class="lead">Antes de instalar nada, verifica que tienes el hardware y conoces el software que vamos a usar. Esta página es una lista de verificación.</p>
+
+<h2>Hardware</h2>
+<table>
+  <thead><tr><th>Elemento</th><th>Detalle</th><th>Obligatorio</th></tr></thead>
+  <tbody>
+    <tr><td>Computador</td><td>Windows 10/11 (64 bits) o Linux (Ubuntu 22.04/24.04 o similar). 8 GB de RAM recomendados para Docker. Con adaptador WiFi.</td><td>Sí</td></tr>
+    <tr><td>Placa ESP32</td><td>Cualquier <em>ESP32 DevKit</em> (ESP32-WROOM-32, NodeMCU-32S, etc.).</td><td>Sí</td></tr>
+    <tr><td>Cable USB</td><td>Debe ser <strong>de datos</strong> (no solo de carga). Micro-USB o USB-C según la placa.</td><td>Sí</td></tr>
+    <tr><td>Red WiFi 2.4 GHz</td><td>Puede ser el <em>hotspot</em> del propio computador o un router. La ESP32 <strong>no</strong> soporta 5 GHz.</td><td>Sí</td></tr>
+    <tr><td>Celular</td><td>Para probar la web desde otro dispositivo.</td><td>Opcional</td></tr>
+  </tbody>
+</table>
+
+<div class="callout tip">
+  <span class="callout-title">Cómo saber si tu cable es de datos</span>
+  <p>Conecta la placa: si Windows hace el sonido de “dispositivo conectado” o en Linux aparece un nuevo <code>/dev/ttyUSB0</code> o <code>/dev/ttyACM0</code>, el cable transmite datos. Si solo se enciende el LED de la placa y nada más, probablemente es un cable de carga.</p>
+</div>
+
+<h2>Software</h2>
+<table>
+  <thead><tr><th>Herramienta</th><th>Para qué se usa</th><th>Dónde se instala</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Git</strong></td><td>Descargar (clonar) el repositorio y versionar cambios.</td><td><a href="workspace-windows.html">Paso 2</a> / <a href="workspace-linux.html">Paso 3</a></td></tr>
+    <tr><td><strong>Docker</strong> + Docker Compose</td><td>Ejecutar el backend (Python) y el frontend (nginx) sin instalar Python ni nginx en tu equipo.</td><td><a href="workspace-windows.html">Paso 2</a> / <a href="workspace-linux.html">Paso 3</a></td></tr>
+    <tr><td><strong>Arduino IDE 2</strong></td><td>Compilar y cargar el firmware de la ESP32; Monitor Serie.</td><td><a href="arduino-ide.html">Paso 5</a></td></tr>
+    <tr><td><strong>Driver USB-Serial</strong> (CH340 / CP210x)</td><td>Que el sistema operativo reconozca la placa como puerto serie.</td><td><a href="arduino-ide.html">Paso 5</a></td></tr>
+    <tr><td><strong>Paquete esp32 de Espressif</strong></td><td>Compilador, librerías <code>WiFi.h</code> / <code>HTTPClient.h</code> y herramienta de carga para ESP32.</td><td><a href="arduino-ide.html">Paso 5</a></td></tr>
+    <tr><td>Editor de código (VS Code)</td><td>Leer y editar el código del backend/frontend cómodamente.</td><td>Opcional</td></tr>
+  </tbody>
+</table>
+
+<h2>Conocimientos previos</h2>
+<ul>
+  <li>Abrir una terminal (PowerShell en Windows, Terminal en Linux) y ejecutar comandos.</li>
+  <li>Nociones básicas de redes: qué es una IP y un puerto.</li>
+  <li>Programación básica en C/C++ (Arduino), Python o JavaScript ayuda, pero cada archivo se explica en detalle en esta documentación.</li>
+</ul>
+
+<h2>Ruta del Getting Started</h2>
+<pre class="mermaid">
+flowchart TD
+    A["1. Requisitos"] --> B{"Sistema operativo"}
+    B -->|Windows| C["2. Workspace en Windows"]
+    B -->|Linux| D["3. Workspace en Linux"]
+    C --> E["4. Clonar y levantar servicios"]
+    D --> E
+    E --> F["5. Arduino IDE + placa ESP32"]
+    F --> G["6. Configurar red y config.h"]
+    G --> H["7. Programar la ESP32"]
+    H --> I["8. Prueba de extremo a extremo"]
+</pre>
+<p>Sigue <strong>solo</strong> la página de workspace que corresponde a tu sistema operativo (2 o 3) y continúa en la 4.</p>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

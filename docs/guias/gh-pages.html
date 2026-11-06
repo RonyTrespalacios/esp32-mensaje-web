@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publicar esta documentación · ESP32 Mensaje Web</title>
+<meta name="description" content="Cómo publicar la carpeta docs con GitHub Pages y cómo editarla">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="guias/gh-pages.html">
+<article class="doc">
+<h1>Publicar esta documentación</h1>
+<p class="lead">Este sitio es HTML estático dentro de la carpeta <code>docs/</code>. GitHub Pages puede servirlo directamente, sin compilación.</p>
+
+<h2>Activar GitHub Pages</h2>
+<h3>Desde la web de GitHub</h3>
+<ol class="steps">
+  <li><strong>Abre el repositorio</strong> en GitHub → <em>Settings</em> → <em>Pages</em> (menú izquierdo).</li>
+  <li><strong>Source:</strong> <em>Deploy from a branch</em>.</li>
+  <li><strong>Branch:</strong> <code>main</code> y carpeta <code>/docs</code> → <em>Save</em>.</li>
+  <li><strong>Espera 1–2 minutos.</strong> La URL aparece arriba en la misma página: <code>https://&lt;usuario&gt;.github.io/&lt;repositorio&gt;/</code>.</li>
+</ol>
+
+<h3>Desde la terminal (GitHub CLI)</h3>
+<pre><code class="language-bash">gh api -X POST repos/&lt;usuario&gt;/&lt;repositorio&gt;/pages \
+  -f "source[branch]=main" -f "source[path]=/docs"</code></pre>
+<p>Cada <code>git push</code> a <code>main</code> que modifique <code>docs/</code> vuelve a publicar el sitio automáticamente. El progreso se ve en la pestaña <em>Actions</em> (<em>pages build and deployment</em>).</p>
+
+<h2>Ver el sitio en local</h2>
+<p>Los diagramas y el resaltado se cargan como módulos desde CDN, así que conviene servir la carpeta por HTTP en lugar de abrir el archivo con doble clic:</p>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<pre><code class="language-powershell">cd docs
+python -m http.server 8080
+# o, sin Python, con Docker:
+docker run --rm -p 8080:80 -v ${PWD}:/usr/share/nginx/html:ro nginx:alpine</code></pre>
+  </div>
+  <div class="tab" data-label="Linux">
+<pre><code class="language-bash">cd docs
+python3 -m http.server 8080
+# o con Docker:
+docker run --rm -p 8080:80 -v "$PWD":/usr/share/nginx/html:ro nginx:alpine</code></pre>
+  </div>
+</div>
+<p>Abre <a href="http://localhost:8080">http://localhost:8080</a>.</p>
+
+<h2>Cómo está construido</h2>
+<pre data-title="docs/"><code class="language-plaintext">docs/
+├── .nojekyll              # le dice a GitHub Pages que no procese con Jekyll
+├── index.html             # Bienvenida
+├── assets/
+│   ├── css/docs.css       # estilos (tema claro/oscuro)
+│   └── js/docs.js         # índice lateral, TOC, búsqueda, pestañas, diagramas
+├── inicio/ …              # Getting Started
+├── arquitectura/ …
+├── backend/ …
+├── frontend/ …
+├── hardware/ …
+├── guias/ …
+└── referencia/ …</code></pre>
+<p>Cada página contiene solo su contenido dentro de <code>&lt;article class="doc"&gt;</code>. <code>docs.js</code> genera alrededor el encabezado, el panel izquierdo (a partir de la constante <code>NAV</code>), la tabla “En esta página”, las migas de pan y los botones Anterior/Siguiente.</p>
+
+<h2>Agregar una página</h2>
+<ol class="steps">
+  <li><strong>Copia una página existente</strong> de la misma carpeta, p. ej. <code>guias/extender.html</code> → <code>guias/mi-guia.html</code>.</li>
+  <li><strong>Ajusta el <code>&lt;body&gt;</code>:</strong> <code>data-page="guias/mi-guia.html"</code> (ruta relativa a <code>docs/</code>) y <code>data-root="../"</code> (<code>""</code> si está en la raíz).</li>
+  <li><strong>Escribe el contenido</strong> con <code>&lt;h1&gt;</code>, <code>&lt;h2&gt;</code> y <code>&lt;h3&gt;</code>. Los <code>h2</code> aparecen como subsecciones en el panel izquierdo.</li>
+  <li><strong>Regístrala en <code>NAV</code></strong> dentro de <code>assets/js/docs.js</code>:
+<pre><code class="language-javascript">{ t: "Mi guía", p: "guias/mi-guia.html", k: "palabras clave para la búsqueda" },</code></pre></li>
+</ol>
+
+<h3>Componentes disponibles</h3>
+<table>
+  <thead><tr><th>Componente</th><th>Marcado</th></tr></thead>
+  <tbody>
+    <tr><td>Nota / consejo / aviso / peligro</td><td><code>&lt;div class="callout tip"&gt;&lt;span class="callout-title"&gt;…&lt;/span&gt;…&lt;/div&gt;</code> (clases <code>tip</code>, <code>warning</code>, <code>danger</code> o ninguna)</td></tr>
+    <tr><td>Pasos numerados</td><td><code>&lt;ol class="steps"&gt;</code></td></tr>
+    <tr><td>Pestañas sincronizadas</td><td><code>&lt;div class="tabs"&gt;&lt;div class="tab" data-label="Windows"&gt;…&lt;/div&gt;…&lt;/div&gt;</code></td></tr>
+    <tr><td>Código con título</td><td><code>&lt;pre data-title="archivo.py"&gt;&lt;code class="language-python"&gt;…</code></td></tr>
+    <tr><td>Diagrama</td><td><code>&lt;pre class="mermaid"&gt;flowchart LR …&lt;/pre&gt;</code> (sintaxis <a href="https://mermaid.js.org/">Mermaid</a>; escribe <code>&amp;lt;</code> en lugar de <code>&lt;</code>)</td></tr>
+  </tbody>
+</table>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

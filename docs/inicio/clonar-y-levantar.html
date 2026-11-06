@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clonar y levantar servicios · ESP32 Mensaje Web</title>
+<meta name="description" content="git clone y docker compose up del backend y frontend">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c8102e%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27Arial%27 font-size=%2712%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EE32%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/css/docs.css">
+<script>try{var t=JSON.parse(localStorage.getItem("docs-theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body data-root="../" data-page="inicio/clonar-y-levantar.html">
+<article class="doc">
+<h1>4. Clonar y levantar servicios</h1>
+<p class="lead">Descargarás el código con Git y levantarás el backend y el frontend con un solo comando de Docker Compose.</p>
+
+<h2>Clonar el repositorio</h2>
+<div class="tabs">
+  <div class="tab" data-label="Windows">
+<pre><code class="language-powershell">cd $HOME\workspace
+git clone https://github.com/RonyTrespalacios/esp32-mensaje-web.git
+cd esp32-mensaje-web</code></pre>
+  </div>
+  <div class="tab" data-label="Linux">
+<pre><code class="language-bash">cd ~/workspace
+git clone https://github.com/RonyTrespalacios/esp32-mensaje-web.git
+cd esp32-mensaje-web</code></pre>
+  </div>
+</div>
+<p><code>git clone</code> crea la carpeta <code>esp32-mensaje-web</code> con todo el historial. A partir de ahora, <strong>todos los comandos se ejecutan desde esa carpeta</strong>.</p>
+
+<div class="callout tip">
+  <span class="callout-title">¿Hiciste un fork?</span>
+  <p>Si vas a modificar el proyecto y subir tus cambios, primero haz <em>Fork</em> en GitHub y clona <strong>tu</strong> copia: <code>https://github.com/&lt;tu-usuario&gt;/esp32-mensaje-web.git</code>.</p>
+</div>
+
+<h2>Levantar con Docker Compose</h2>
+<p>Asegúrate de que Docker está corriendo (en Windows, Docker Desktop abierto) y ejecuta:</p>
+<pre><code class="language-bash">docker compose up -d --build</code></pre>
+<table>
+  <thead><tr><th>Parte del comando</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td><code>docker compose</code></td><td>Lee <code>docker-compose.yml</code> de la carpeta actual.</td></tr>
+    <tr><td><code>up</code></td><td>Crea y arranca los servicios <code>backend</code> y <code>frontend</code>.</td></tr>
+    <tr><td><code>-d</code></td><td><em>Detached</em>: corre en segundo plano y te devuelve la terminal.</td></tr>
+    <tr><td><code>--build</code></td><td>Construye (o reconstruye) la imagen del backend a partir de <code>backend/Dockerfile</code>.</td></tr>
+  </tbody>
+</table>
+<p>La primera vez tarda uno o dos minutos: descarga <code>python:3.12-slim</code> y <code>nginx:alpine</code> e instala FastAPI. Las siguientes veces es casi instantáneo.</p>
+
+<h3>Qué ocurre por dentro</h3>
+<pre class="mermaid">
+sequenceDiagram
+    participant T as Terminal
+    participant C as Docker Compose
+    participant R as Docker Hub
+    participant BE as Contenedor backend
+    participant FE as Contenedor frontend
+    T->>C: docker compose up -d --build
+    C->>R: descarga python:3.12-slim y nginx:alpine
+    C->>C: build backend/Dockerfile (pip install)
+    C->>BE: arranca uvicorn en :8000
+    C->>FE: arranca nginx en :80 (publicado como :3000)
+    C-->>T: Container mensaje-backend Started / mensaje-frontend Started
+</pre>
+
+<h2>Verificar que está funcionando</h2>
+<pre><code class="language-bash">docker compose ps</code></pre>
+<p>Debes ver dos contenedores con estado <code>running</code> (o <code>Up</code>):</p>
+<pre><code class="language-plaintext">NAME               IMAGE                    SERVICE    STATUS         PORTS
+mensaje-backend    esp32-mensaje-web-backend backend   Up 10 seconds  0.0.0.0:8000-&gt;8000/tcp
+mensaje-frontend   nginx:alpine             frontend   Up 10 seconds  0.0.0.0:3000-&gt;80/tcp</code></pre>
+
+<p>Ahora abre en el navegador:</p>
+<table>
+  <thead><tr><th>URL</th><th>Qué debes ver</th></tr></thead>
+  <tbody>
+    <tr><td><a href="http://localhost:3000">http://localhost:3000</a></td><td>La página <em>Mensaje para la ESP32</em> mostrando “Hola mundo”.</td></tr>
+    <tr><td><a href="http://localhost:8000/mensaje">http://localhost:8000/mensaje</a></td><td><code>{"mensaje":"Hola mundo"}</code></td></tr>
+    <tr><td><a href="http://localhost:8000/mensaje/texto">http://localhost:8000/mensaje/texto</a></td><td><code>Hola mundo</code> (texto plano, lo que lee la ESP32)</td></tr>
+    <tr><td><a href="http://localhost:8000/docs">http://localhost:8000/docs</a></td><td>Swagger UI: documentación interactiva de la API.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout tip">
+  <span class="callout-title">Prueba rápida</span>
+  <p>Escribe un mensaje en <code>localhost:3000</code> y pulsa <em>Guardar</em>. Luego recarga <code>localhost:8000/mensaje/texto</code>: debe mostrar tu mensaje. ¡El backend funciona!</p>
+</div>
+
+<h2>Comandos del día a día</h2>
+<table>
+  <thead><tr><th>Comando</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td><code>docker compose ps</code></td><td>Ver el estado de los servicios.</td></tr>
+    <tr><td><code>docker compose logs -f backend</code></td><td>Ver en vivo las peticiones que llegan al backend (incluidas las de la ESP32). <kbd>Ctrl</kbd>+<kbd>C</kbd> para salir.</td></tr>
+    <tr><td><code>docker compose restart backend</code></td><td>Reiniciar el backend (el mensaje vuelve a “Hola mundo”).</td></tr>
+    <tr><td><code>docker compose up -d --build</code></td><td>Aplicar cambios hechos en <code>backend/main.py</code>.</td></tr>
+    <tr><td><code>docker compose down</code></td><td>Detener y eliminar los contenedores.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <span class="callout-title">¿Y los cambios del frontend?</span>
+  <p>La carpeta <code>frontend/</code> está montada como volumen dentro de nginx, así que basta con guardar el archivo y recargar el navegador (<kbd>Ctrl</kbd>+<kbd>F5</kbd>). No hace falta reconstruir.</p>
+</div>
+
+<p>Continúa con <a href="arduino-ide.html">5. Arduino IDE y placa ESP32</a>.</p>
+</article>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>
